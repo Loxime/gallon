@@ -7,11 +7,15 @@ import type {
   ImportedImage,
 } from '../../types/image'
 
-defineProps<{
+withDefaults(defineProps<{
   images: readonly ImportedImage[]
-}>()
+  selectedImageId?: string | null
+}>(), {
+  selectedImageId: null,
+})
 
 const emit = defineEmits<{
+  select: [id: string]
   remove: [id: string]
   move: [
     id: string,
@@ -74,6 +78,15 @@ function handleReplacement(
       v-for="(image, index) in images"
       :key="image.id"
       class="image-card"
+      :class="{
+        'image-card--selected':
+          image.id === selectedImageId,
+      }"
+      :aria-current="
+        image.id === selectedImageId
+          ? 'true'
+          : undefined
+      "
       data-imported-image
     >
       <img
@@ -92,6 +105,23 @@ function handleReplacement(
         </span>
 
         <div class="image-card__actions">
+          <button
+            type="button"
+            class="image-card__action"
+            :class="{
+              'image-card__action--selected':
+                image.id === selectedImageId,
+            }"
+            :aria-pressed="
+              image.id === selectedImageId
+            "
+            :aria-label="`Ajuster ${image.file.name}`"
+            data-select-image
+            @click="emit('select', image.id)"
+          >
+            Ajuster
+          </button>
+
           <button
             type="button"
             class="image-card__action"
@@ -189,6 +219,12 @@ function handleReplacement(
   background: #ffffff;
 }
 
+.image-card--selected {
+  border-color: #2563eb;
+
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
 .image-card__preview {
   width: 56px;
   height: 56px;
@@ -248,6 +284,11 @@ function handleReplacement(
 
 .image-card__action:hover:not(:disabled) {
   color: #0f172a;
+}
+
+.image-card__action--selected {
+  color: #2563eb;
+  font-weight: 600;
 }
 
 .image-card__action:disabled {

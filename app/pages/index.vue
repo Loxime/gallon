@@ -370,6 +370,8 @@ watch(imageCapacity, (capacity) => {
 
           <ImportedImageList
             :images="images"
+            :selected-image-id="selectedImageId"
+            @select="handleSelectImage"
             @remove="handleRemoveImage"
             @move="handleMoveImage"
             @replace="handleReplaceImage"
@@ -575,9 +577,26 @@ watch(imageCapacity, (capacity) => {
     gap: 32px;
   }
 
+  .workspace-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .export-button {
+    width: 100%;
+  }
+
   .workspace {
     min-height: auto;
     padding: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .workspace {
+    padding: 16px;
+
+    border-radius: 12px;
   }
 }
 </style>

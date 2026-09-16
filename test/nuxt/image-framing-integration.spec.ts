@@ -165,4 +165,50 @@ describe('image framing integration', () => {
       'height: 100%',
     )
   })
+  it('selects an image for framing from the image list', async () => {
+    const wrapper = await mountSuspended(
+      HomePage,
+    )
+
+    await importImage(wrapper)
+
+    expect(
+      wrapper.find(
+        '[data-framing-controls]',
+      ).exists(),
+    ).toBe(false)
+
+    const selectButton = wrapper.get(
+      '[data-select-image]',
+    )
+
+    expect(
+      selectButton.element.tagName,
+    ).toBe('BUTTON')
+
+    await selectButton.trigger('click')
+
+    expect(
+      wrapper.find(
+        '[data-framing-controls]',
+      ).exists(),
+    ).toBe(true)
+
+    expect(
+      selectButton.attributes(
+        'aria-pressed',
+      ),
+    ).toBe('true')
+
+    expect(
+      wrapper
+        .get('[data-imported-image]')
+        .attributes('aria-current'),
+    ).toBe('true')
+
+    expect(wrapper.text()).toContain(
+      'portrait.jpg',
+    )
+  })
+
 })
