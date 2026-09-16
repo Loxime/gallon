@@ -14,10 +14,15 @@ import AppSidebar from '../components/layout/AppSidebar.vue'
 
 import { useImportedImages } from '../composables/useImportedImages'
 import { useImageFramings } from '../composables/useImageFramings'
+import { useImageAssignments } from '../composables/useImageAssignments'
 
 import type {
   GridTemplateId,
 } from '../types/grid'
+
+import {
+  SUPPORTED_IMAGE_MIME_TYPES,
+} from '../types/image'
 
 import type {
   ImageImportSelection,
@@ -58,6 +63,15 @@ const imageGridEditor = ref<ImageGridEditorHandle | null>(
 const importNotice = ref('')
 const exportNotice = ref('')
 const selectedImageId = ref<string | null>(null)
+const selectedCellId = ref<string | null>(null)
+
+const pendingCellImportId = ref<string | null>(null)
+
+const cellImportInput
+  = ref<HTMLInputElement | null>(null)
+
+const acceptedImageTypes
+  = SUPPORTED_IMAGE_MIME_TYPES.join(',')
 
 const {
   framings,
@@ -76,6 +90,15 @@ const {
   replaceImage,
   trimToLimit,
 } = useImportedImages()
+
+const {
+  assignments,
+  assignImage,
+  replaceImage: replaceImageAssignment,
+  assignSequentially,
+  syncAssignments,
+  getCellIdForImage,
+} = useImageAssignments()
 
 const selectedTemplate = computed(() => {
   return getGridTemplateById(
@@ -126,6 +149,98 @@ function handleSelectImage(
   imageId: string,
 ): void {
   selectedImageId.value = imageId
+
+  selectedCellId.value
+    = getCellIdForImage(imageId)
+      ?? null
+}
+
+function handleSelectCell(
+  cellId: string,
+): void {
+  selectedCellId.value = cellId
+
+  selectedImageId.value
+    = assignments.value[cellId]
+      ?? null
+}
+
+function handleRequestCellImport(
+  cellId: string,
+): void {
+  if (assignments.value[cellId]) {
+    return
+  }
+
+  selectedCellId.value = cellId
+  selectedImageId.value = null
+  pendingCellImportId.value = cellId
+
+  cellImportInput.value?.click()
+}
+
+function handleCellFile(
+  cellId: string,
+  file: File,
+): void {
+  if (assignments.value[cellId]) {
+    return
+  }
+
+  const previousImageIds = new Set(
+    images.value.map(
+      image => image.id,
+    ),
+  )
+
+  const selection = addFiles(
+    [file],
+    1,
+  )
+
+  importNotice.value
+    = getImportNotice(selection)
+
+  const importedImage = images.value.find(
+    image => !previousImageIds.has(image.id),
+  )
+
+  if (!importedImage) {
+    return
+  }
+
+  assignImage(
+    cellId,
+    importedImage.id,
+  )
+
+  selectedCellId.value = cellId
+  selectedImageId.value = importedImage.id
+}
+
+function handleCellImportChange(
+  event: Event,
+): void {
+  const input
+    = event.target as HTMLInputElement
+
+  const file = input.files?.[0]
+  const cellId = pendingCellImportId.value
+
+  input.value = ''
+  pendingCellImportId.value = null
+
+  if (
+    !file
+    || !cellId
+  ) {
+    return
+  }
+
+  handleCellFile(
+    cellId,
+    file,
+  )
 }
 
 function handleFramingChange(
@@ -244,10 +359,24 @@ function handleMoveImage(
   id: string,
   targetIndex: number,
 ): void {
-  moveImage(
+  const moved = moveImage(
     id,
     targetIndex,
   )
+
+  if (
+    moved
+    && selectedTemplate.value
+  ) {
+    assignSequentially(
+      selectedTemplate.value.cells.map(
+        cell => cell.id,
+      ),
+      images.value.map(
+        image => image.id,
+      ),
+    )
+  }
 
   importNotice.value = ''
 }
@@ -267,6 +396,11 @@ function handleReplaceImage(
     return
   }
 
+  replaceImageAssignment(
+    id,
+    replacement.id,
+  )
+
   resetFraming(id)
 
   if (selectedImageId.value === id) {
@@ -276,6 +410,31 @@ function handleReplaceImage(
 
   importNotice.value = ''
 }
+
+watch(
+  [
+    () => (
+      selectedTemplate.value?.cells.map(
+        cell => cell.id,
+      ) ?? []
+    ),
+    () => images.value.map(
+      image => image.id,
+    ),
+  ],
+  ([
+    cellIds,
+    imageIds,
+  ]) => {
+    syncAssignments(
+      cellIds,
+      imageIds,
+    )
+  },
+  {
+    immediate: true,
+  },
+)
 
 watch(
   () => images.value.map(image => image.id),
@@ -409,9 +568,14 @@ watch(imageCapacity, (capacity) => {
               class="workspace__preview"
               :template="selectedTemplate"
               :images="images"
+              :assignments="assignments"
               :framings="framings"
               :selected-image-id="selectedImageId"
+              :selected-cell-id="selectedCellId"
               @select="handleSelectImage"
+              @select-cell="handleSelectCell"
+              @request-import="handleRequestCellImport"
+              @file-drop="handleCellFile"
               @framing-change="handleFramingChange"
             />
 
@@ -420,12 +584,27 @@ watch(imageCapacity, (capacity) => {
                 class="workspace__preview"
                 :template="selectedTemplate"
                 :images="images"
+                :assignments="assignments"
                 :framings="framings"
                 :selected-image-id="selectedImageId"
+                :selected-cell-id="selectedCellId"
+                @select="handleSelectImage"
+                @select-cell="handleSelectCell"
+                @request-import="handleRequestCellImport"
+                @file-drop="handleCellFile"
               />
             </template>
           </ClientOnly>
         </div>
+
+        <input
+          ref="cellImportInput"
+          class="cell-import-input"
+          type="file"
+          :accept="acceptedImageTypes"
+          data-cell-image-input
+          @change="handleCellImportChange"
+        >
 
         <p
           v-if="exportNotice"
@@ -595,6 +774,19 @@ watch(imageCapacity, (capacity) => {
   background: #e2e8f0;
 
   cursor: default;
+}
+
+.cell-import-input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+
+  white-space: nowrap;
 }
 
 .export-notice {

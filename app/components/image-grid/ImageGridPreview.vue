@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  ref,
   shallowRef,
   watch,
 } from 'vue'
@@ -18,6 +19,10 @@ import type {
 } from '../../types/image-framing'
 
 import type {
+  ImageAssignments,
+} from '../../types/image-assignment'
+
+import type {
   LoadedImageResource,
 } from '../../utils/image-loader'
 
@@ -33,20 +38,32 @@ import {
 const props = withDefaults(defineProps<{
   template: GridTemplate
   images: readonly ImportedImage[]
+  assignments?: ImageAssignments | null
   framings?: Readonly<Record<string, ImageFraming>>
   selectedImageId?: string | null
+  selectedCellId?: string | null
 }>(), {
+  assignments: null,
   framings: () => ({}),
   selectedImageId: null,
+  selectedCellId: null,
 })
 
 const emit = defineEmits<{
   select: [imageId: string]
+  selectCell: [cellId: string]
+  requestImport: [cellId: string]
+  fileDrop: [
+    cellId: string,
+    file: File,
+  ]
 }>()
 
 const loadedImages = shallowRef(
   new Map<string, LoadedImageResource>(),
 )
+
+const dragOverCellId = ref<string | null>(null)
 
 let loadGeneration = 0
 
@@ -112,7 +129,14 @@ watch(
 const cells = computed(() => {
   return props.template.cells.map(
     (cell, index) => {
-      const image = props.images[index]
+      const assignedImageId
+        = props.assignments?.[cell.id]
+
+      const image = props.assignments
+        ? props.images.find(
+            image => image.id === assignedImageId,
+          )
+        : props.images[index]
 
       if (!image) {
         return {
@@ -168,6 +192,74 @@ const cells = computed(() => {
     },
   )
 })
+
+function handleCellClick(
+  cellId: string,
+  imageId?: string,
+): void {
+  emit(
+    'selectCell',
+    cellId,
+  )
+
+  if (imageId) {
+    emit(
+      'select',
+      imageId,
+    )
+
+    return
+  }
+
+  emit(
+    'requestImport',
+    cellId,
+  )
+}
+
+function handleDragEnter(
+  cellId: string,
+  hasImage: boolean,
+): void {
+  if (hasImage) {
+    return
+  }
+
+  dragOverCellId.value = cellId
+}
+
+function handleDragLeave(
+  cellId: string,
+): void {
+  if (dragOverCellId.value === cellId) {
+    dragOverCellId.value = null
+  }
+}
+
+function handleDrop(
+  cellId: string,
+  hasImage: boolean,
+  event: DragEvent,
+): void {
+  dragOverCellId.value = null
+
+  if (hasImage) {
+    return
+  }
+
+  const file = event.dataTransfer?.files[0]
+
+  if (!file) {
+    return
+  }
+
+  emit(
+    'fileDrop',
+    cellId,
+    file,
+  )
+}
+
 </script>
 
 <template>
@@ -184,7 +276,14 @@ const cells = computed(() => {
       class="image-grid-preview__cell"
       :class="{
         'image-grid-preview__cell--selected':
-          item.image?.id === selectedImageId,
+          item.cell.id === selectedCellId
+          || item.image?.id === selectedImageId,
+
+        'image-grid-preview__cell--drag-over':
+          item.cell.id === dragOverCellId,
+
+        'image-grid-preview__cell--empty':
+          !item.image,
       }"
       :style="{
         left: `${item.cell.x * 100}%`,
@@ -192,17 +291,47 @@ const cells = computed(() => {
         width: `${item.cell.width * 100}%`,
         height: `${item.cell.height * 100}%`,
       }"
-      :data-cell-id="item.cell.id"
-      :disabled="!item.image"
-      :aria-pressed="
+      :aria-label="
         item.image
-          ? item.image.id === selectedImageId
+          ? `Ajuster ${item.image.file.name}`
+          : 'Ajouter une image'
+      "
+      :aria-pressed="
+        item.cell.id === selectedCellId
+        || item.image?.id === selectedImageId
+      "
+      :data-cell-id="item.cell.id"
+      :data-assigned-image-id="
+        item.image?.id
+      "
+      :data-empty-grid-cell="
+        !item.image
+          ? ''
           : undefined
       "
       data-grid-cell
       @click="
-        item.image
-          && emit('select', item.image.id)
+        handleCellClick(
+          item.cell.id,
+          item.image?.id,
+        )
+      "
+      @dragenter.prevent="
+        handleDragEnter(
+          item.cell.id,
+          Boolean(item.image),
+        )
+      "
+      @dragover.prevent
+      @dragleave="
+        handleDragLeave(item.cell.id)
+      "
+      @drop.prevent="
+        handleDrop(
+          item.cell.id,
+          Boolean(item.image),
+          $event,
+        )
       "
     >
       <img
@@ -214,6 +343,15 @@ const cells = computed(() => {
         :data-image-id="item.image.id"
         data-grid-image
       >
+
+      <span
+        v-if="!item.image"
+        class="image-grid-preview__add"
+        aria-hidden="true"
+      >
+        <strong>+</strong>
+        <span>Ajouter</span>
+      </span>
     </button>
   </div>
 </template>
@@ -236,24 +374,45 @@ const cells = computed(() => {
   padding: 0;
 
   border: 2px solid #ffffff;
+
   background: #cbd5e1;
+
+  cursor: pointer;
+
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
-.image-grid-preview__cell:not(:disabled) {
-  cursor: pointer;
+.image-grid-preview__cell--empty {
+  background: #f1f5f9;
+}
+
+.image-grid-preview__cell--empty:hover {
+  background: #e2e8f0;
 }
 
 .image-grid-preview__cell:focus-visible {
   z-index: 2;
 
-  outline: 3px solid #2563eb;
+  outline: 3px solid #475569;
   outline-offset: -3px;
 }
 
 .image-grid-preview__cell--selected {
   z-index: 1;
 
-  box-shadow: inset 0 0 0 3px #2563eb;
+  box-shadow:
+    inset 0 0 0 3px #475569;
+}
+
+.image-grid-preview__cell--drag-over {
+  z-index: 3;
+
+  background: #e2e8f0;
+
+  box-shadow:
+    inset 0 0 0 3px #64748b;
 }
 
 .image-grid-preview__image {
@@ -262,5 +421,31 @@ const cells = computed(() => {
   max-width: none;
 
   object-fit: fill;
+}
+
+.image-grid-preview__add {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  color: #64748b;
+
+  pointer-events: none;
+}
+
+.image-grid-preview__add strong {
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.image-grid-preview__add span {
+  font-size: 11px;
+  font-weight: 600;
 }
 </style>

@@ -105,6 +105,96 @@ describe('image import integration', () => {
     ).toBeDefined()
   })
 
+  it('imports an image directly into a chosen empty cell', async () => {
+    const wrapper = await mountSuspended(HomePage)
+
+    const secondCell = wrapper.get(
+      '[data-cell-id="cell-2"]',
+    )
+
+    await secondCell.trigger('click')
+
+    const input = wrapper.get(
+      '[data-cell-image-input]',
+    )
+
+    Object.defineProperty(
+      input.element,
+      'files',
+      {
+        configurable: true,
+        value: [
+          createFile('target.jpg'),
+        ],
+      },
+    )
+
+    await input.trigger('change')
+
+    const cells = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    expect(
+      cells[0]?.attributes(
+        'data-assigned-image-id',
+      ),
+    ).toBeUndefined()
+
+    expect(
+      cells[1]?.attributes(
+        'data-assigned-image-id',
+      ),
+    ).toBeDefined()
+
+    expect(
+      wrapper.findAll(
+        '[data-imported-image]',
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('imports a dropped file directly into an empty cell', async () => {
+    const wrapper = await mountSuspended(HomePage)
+
+    const firstCell = wrapper.get(
+      '[data-cell-id="cell-1"]',
+    )
+
+    await firstCell.trigger(
+      'drop',
+      {
+        dataTransfer: {
+          files: [
+            createFile('dropped.png', 'image/png'),
+          ],
+        },
+      },
+    )
+
+    const cells = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    expect(
+      cells[0]?.attributes(
+        'data-assigned-image-id',
+      ),
+    ).toBeDefined()
+
+    expect(
+      cells[1]?.attributes(
+        'data-assigned-image-id',
+      ),
+    ).toBeUndefined()
+
+    expect(
+      wrapper.findAll(
+        '[data-imported-image]',
+      ),
+    ).toHaveLength(1)
+  })
+
   it('removes an imported image', async () => {
     const wrapper = await mountSuspended(HomePage)
 
