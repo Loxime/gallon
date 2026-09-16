@@ -31,6 +31,10 @@ import type {
 } from '../../types/image-framing'
 
 import type {
+  ImageAssignments,
+} from '../../types/image-assignment'
+
+import type {
   ImageDimensions,
 } from '../../types/image-placement'
 
@@ -59,15 +63,25 @@ import {
 const props = withDefaults(defineProps<{
   template: GridTemplate
   images: readonly ImportedImage[]
+  assignments?: ImageAssignments | null
   framings?: Readonly<Record<string, ImageFraming>>
   selectedImageId?: string | null
+  selectedCellId?: string | null
 }>(), {
+  assignments: null,
   framings: () => ({}),
   selectedImageId: null,
+  selectedCellId: null,
 })
 
 const emit = defineEmits<{
   select: [imageId: string]
+  selectCell: [cellId: string]
+  requestImport: [cellId: string]
+  fileDrop: [
+    cellId: string,
+    file: File,
+  ]
   framingChange: [
     imageId: string,
     framing: ImageFraming,
@@ -91,7 +105,7 @@ function hasCanvasContext(): boolean {
 
 const supportsCanvas = hasCanvasContext()
 
-interface DragEvent {
+interface KonvaDragEvent {
   target: {
     x: () => number
     y: () => number
@@ -105,6 +119,7 @@ interface KonvaStageComponent {
 const container = ref<HTMLElement>()
 const stageComponent = ref<KonvaStageComponent>()
 const stageWidth = ref(480)
+const dragOverCellId = ref<string | null>(null)
 
 const loadedImages = shallowRef(
   new Map<string, LoadedImageResource>(),
@@ -217,7 +232,15 @@ const cells = computed(() => {
       const width = cell.width * stageWidth.value
       const height = cell.height * stageHeight.value
 
-      const image = props.images[index]
+      const assignedImageId
+        = props.assignments?.[cell.id]
+
+      const image = props.assignments
+        ? props.images.find(
+            image => image.id === assignedImageId,
+          )
+        : props.images[index]
+
       const resource = image
         ? loadedImages.value.get(image.id)
         : undefined
@@ -321,6 +344,12 @@ const cells = computed(() => {
   )
 })
 
+const emptyCells = computed(() => {
+  return cells.value.filter(
+    item => !item.image,
+  )
+})
+
 function exportPng(): string {
   if (!supportsCanvas) {
     throw new Error(
@@ -347,16 +376,57 @@ defineExpose({
 
 function handleSelect(
   imageId: string,
+  cellId?: string,
 ): void {
+  if (cellId) {
+    emit(
+      'selectCell',
+      cellId,
+    )
+  }
+
   emit(
     'select',
     imageId,
   )
 }
 
+function handleEmptyCellClick(
+  cellId: string,
+): void {
+  emit(
+    'selectCell',
+    cellId,
+  )
+
+  emit(
+    'requestImport',
+    cellId,
+  )
+}
+
+function handleEmptyCellDrop(
+  cellId: string,
+  event: DragEvent,
+): void {
+  dragOverCellId.value = null
+
+  const file = event.dataTransfer?.files[0]
+
+  if (!file) {
+    return
+  }
+
+  emit(
+    'fileDrop',
+    cellId,
+    file,
+  )
+}
+
 function handleDragEnd(
   item: (typeof cells.value)[number],
-  event: DragEvent,
+  event: KonvaDragEvent,
 ): void {
   if (
     !item.image
@@ -409,77 +479,164 @@ function handleDragEnd(
       v-if="!supportsCanvas"
       :template="template"
       :images="images"
+      :assignments="assignments"
       :framings="framings"
       :selected-image-id="selectedImageId"
+      :selected-cell-id="selectedCellId"
       @select="handleSelect"
+      @select-cell="emit('selectCell', $event)"
+      @request-import="emit('requestImport', $event)"
+      @file-drop="
+        (cellId, file) =>
+          emit(
+            'fileDrop',
+            cellId,
+            file,
+          )
+      "
     />
 
-    <VStage
-      v-else
-      ref="stageComponent"
-      :config="{
-        width: stageWidth,
-        height: stageHeight,
-      }"
-    >
-      <VLayer>
-        <VGroup
-          v-for="item in cells"
+    <template v-else>
+      <VStage
+        ref="stageComponent"
+        :config="{
+          width: stageWidth,
+          height: stageHeight,
+        }"
+      >
+        <VLayer>
+          <VGroup
+            v-for="item in cells"
+            :key="item.cell.id"
+            :config="{
+              x: item.x,
+              y: item.y,
+              clipX: 0,
+              clipY: 0,
+              clipWidth: item.width,
+              clipHeight: item.height,
+            }"
+          >
+            <VRect
+              :config="{
+                x: 0,
+                y: 0,
+                width: item.width,
+                height: item.height,
+                fill: '#cbd5e1',
+                stroke: '#ffffff',
+                strokeWidth: 2,
+              }"
+            />
+
+            <VImage
+              v-if="item.image && item.imageConfig"
+              :config="item.imageConfig"
+              @click="
+                handleSelect(
+                  item.image.id,
+                  item.cell.id,
+                )
+              "
+              @tap="
+                handleSelect(
+                  item.image.id,
+                  item.cell.id,
+                )
+              "
+              @dragstart="
+                handleSelect(
+                  item.image.id,
+                  item.cell.id,
+                )
+              "
+              @dragend="
+                handleDragEnd(
+                  item,
+                  $event,
+                )
+              "
+            />
+
+            <VRect
+              v-if="
+                item.image
+                  && (
+                    item.image.id === selectedImageId
+                    || item.cell.id === selectedCellId
+                  )
+              "
+              :config="{
+                x: 0,
+                y: 0,
+                width: item.width,
+                height: item.height,
+                stroke: '#475569',
+                strokeWidth: 4,
+                listening: false,
+                name: 'editor-overlay',
+              }"
+            />
+          </VGroup>
+        </VLayer>
+      </VStage>
+
+      <div
+        class="konva-grid-editor__empty-cells"
+        aria-label="Cellules vides"
+      >
+        <button
+          v-for="item in emptyCells"
           :key="item.cell.id"
-          :config="{
-            x: item.x,
-            y: item.y,
-            clipX: 0,
-            clipY: 0,
-            clipWidth: item.width,
-            clipHeight: item.height,
+          type="button"
+          class="konva-grid-editor__empty-cell"
+          :class="{
+            'konva-grid-editor__empty-cell--selected':
+              item.cell.id === selectedCellId,
+
+            'konva-grid-editor__empty-cell--drag-over':
+              item.cell.id === dragOverCellId,
           }"
+          :style="{
+            left: `${item.cell.x * 100}%`,
+            top: `${item.cell.y * 100}%`,
+            width: `${item.cell.width * 100}%`,
+            height: `${item.cell.height * 100}%`,
+          }"
+          aria-label="Ajouter une image"
+          :data-cell-id="item.cell.id"
+          data-empty-grid-cell
+          @click="
+            handleEmptyCellClick(
+              item.cell.id,
+            )
+          "
+          @dragenter.prevent="
+            dragOverCellId = item.cell.id
+          "
+          @dragover.prevent
+          @dragleave="
+            dragOverCellId = null
+          "
+          @drop.prevent="
+            handleEmptyCellDrop(
+              item.cell.id,
+              $event,
+            )
+          "
         >
-          <VRect
-            :config="{
-              x: 0,
-              y: 0,
-              width: item.width,
-              height: item.height,
-              fill: '#cbd5e1',
-              stroke: '#ffffff',
-              strokeWidth: 2,
-            }"
-          />
-
-          <VImage
-            v-if="item.image && item.imageConfig"
-            :config="item.imageConfig"
-            @click="handleSelect(item.image.id)"
-            @tap="handleSelect(item.image.id)"
-            @dragstart="handleSelect(item.image.id)"
-            @dragend="handleDragEnd(item, $event)"
-          />
-
-          <VRect
-            v-if="
-              item.image
-                && item.image.id === selectedImageId
-            "
-            :config="{
-              x: 0,
-              y: 0,
-              width: item.width,
-              height: item.height,
-              stroke: '#2563eb',
-              strokeWidth: 4,
-              listening: false,
-              name: 'editor-overlay',
-            }"
-          />
-        </VGroup>
-      </VLayer>
-    </VStage>
+          <strong>+</strong>
+          <span>Ajouter</span>
+        </button>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .konva-grid-editor {
+  position: relative;
+
   width: 100%;
   overflow: hidden;
 
@@ -493,5 +650,73 @@ function handleDragEnd(
   border: 0;
 
   background: transparent;
+}
+
+.konva-grid-editor__empty-cells {
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+}
+
+.konva-grid-editor__empty-cell {
+  position: absolute;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  padding: 0;
+
+  color: #64748b;
+
+  border: 2px solid #ffffff;
+
+  background: rgba(241, 245, 249, 0.96);
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.konva-grid-editor__empty-cell:hover {
+  background: rgba(226, 232, 240, 0.98);
+}
+
+.konva-grid-editor__empty-cell:focus-visible {
+  z-index: 2;
+
+  outline: 3px solid #475569;
+  outline-offset: -3px;
+}
+
+.konva-grid-editor__empty-cell--selected {
+  box-shadow:
+    inset 0 0 0 3px #475569;
+}
+
+.konva-grid-editor__empty-cell--drag-over {
+  z-index: 3;
+
+  background: #e2e8f0;
+
+  box-shadow:
+    inset 0 0 0 3px #64748b;
+}
+
+.konva-grid-editor__empty-cell strong {
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.konva-grid-editor__empty-cell span {
+  font-size: 11px;
+  font-weight: 600;
 }
 </style>

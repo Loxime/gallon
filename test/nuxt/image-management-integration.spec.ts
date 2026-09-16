@@ -168,6 +168,82 @@ describe('image management integration', () => {
     )
   })
 
+  it('shows contextual actions for the selected grid image', async () => {
+    const wrapper = await mountSuspended(
+      HomePage,
+    )
+
+    await importFiles(
+      wrapper,
+      [
+        createFile('selected.jpg'),
+      ],
+    )
+
+    await wrapper
+      .get('[data-grid-cell]')
+      .trigger('click')
+
+    expect(
+      wrapper.get(
+        '[data-selected-cell-actions]',
+      ).text(),
+    ).toContain('selected.jpg')
+
+    expect(
+      wrapper.find(
+        '[data-selected-cell-replace]',
+      ).exists(),
+    ).toBe(true)
+
+    expect(
+      wrapper.find(
+        '[data-selected-cell-remove]',
+      ).exists(),
+    ).toBe(true)
+  })
+
+  it('removes the selected image from contextual actions', async () => {
+    const wrapper = await mountSuspended(
+      HomePage,
+    )
+
+    await importFiles(
+      wrapper,
+      [
+        createFile('remove-me.jpg'),
+      ],
+    )
+
+    await wrapper
+      .get('[data-grid-cell]')
+      .trigger('click')
+
+    await wrapper
+      .get('[data-selected-cell-remove]')
+      .trigger('click')
+
+    await flushPromises()
+
+    expect(
+      wrapper.findAll(
+        '[data-imported-image]',
+      ),
+    ).toHaveLength(0)
+
+    expect(
+      wrapper.find(
+        '[data-selected-cell-actions]',
+      ).exists(),
+    ).toBe(false)
+
+    expect(
+      URL.revokeObjectURL,
+    ).toHaveBeenCalledWith(
+      'blob:remove-me.jpg',
+    )
+  })
+
   it('resets framing when replacing the selected image', async () => {
     const wrapper = await mountSuspended(
       HomePage,

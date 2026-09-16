@@ -155,6 +155,60 @@ describe('image grid preview', () => {
     ).toHaveLength(2)
   })
 
+  it('supports explicit assignments with an empty cell between images', async () => {
+    installImageMock()
+
+    const template = GRID_TEMPLATES.find(
+      item => item.id === 'three-columns',
+    )
+
+    expect(template).toBeDefined()
+
+    if (!template) {
+      return
+    }
+
+    const wrapper = mount(
+      ImageGridPreview,
+      {
+        props: {
+          template,
+          images: [
+            createImportedImage('first'),
+            createImportedImage('second'),
+          ],
+          assignments: {
+            'cell-1': 'first',
+            'cell-3': 'second',
+          },
+        },
+      },
+    )
+
+    await flushPromises()
+
+    const cells = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    expect(cells).toHaveLength(3)
+
+    expect(
+      cells[0]?.get('[data-grid-image]')
+        .attributes('data-image-id'),
+    ).toBe('first')
+
+    expect(
+      cells[1]?.find('[data-grid-image]')
+        .exists(),
+    ).toBe(false)
+
+    expect(
+      cells[2]?.get('[data-grid-image]')
+        .attributes('data-image-id'),
+    ).toBe('second')
+  })
+
   it('uses the cover placement inside a cell', async () => {
     installImageMock(
       500,
