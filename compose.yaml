@@ -1,0 +1,36 @@
+name: gallon
+
+services:
+  app:
+    build:
+      context: .
+      target: production
+
+    image: gallon:local
+
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "${GALLON_BIND_ADDRESS:-127.0.0.1}:${GALLON_PORT:-3034}:3000"
+
+    environment:
+      NODE_ENV: production
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: 3000
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3000/')
+          .then(response => {
+            if (!response.ok) process.exit(1)
+          })
+          .catch(() => process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
