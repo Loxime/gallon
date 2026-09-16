@@ -10,5 +10,13 @@ describe('home page', () => {
     expect(wrapper.get('h1').text()).toBe(
       'Créateur de grille d’images',
     )
+
+    expect(wrapper.text()).toContain(
+      'Choisissez une grille',
+    )
+
+    expect(wrapper.text()).toContain(
+      'Aperçu',
+    )
   })
 })
