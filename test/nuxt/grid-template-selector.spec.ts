@@ -11,7 +11,7 @@ describe('grid template selector', () => {
       '[data-template-id]',
     )
 
-    expect(templateButtons).toHaveLength(4)
+    expect(templateButtons).toHaveLength(10)
   })
 
   it('selects the default template initially', async () => {
