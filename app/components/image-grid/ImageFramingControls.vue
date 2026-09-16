@@ -99,6 +99,31 @@ function handleZoomInput(event: Event): void {
 
 .framing-controls__reset {
   align-self: flex-start;
+
+  padding: 8px 10px;
+
+  color: #475569;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  cursor: pointer;
+}
+
+.framing-controls__reset:hover {
+  color: #0f172a;
+
+  border-color: #94a3b8;
+}
+
+.framing-controls__reset:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .framing-controls__zoom {
@@ -112,5 +137,14 @@ function handleZoomInput(event: Event): void {
 .framing-controls__zoom input {
   grid-column: 1 / -1;
   width: 100%;
+}
+@media (max-width: 520px) {
+  .framing-controls__heading {
+    flex-direction: column;
+  }
+
+  .framing-controls__reset {
+    align-self: stretch;
+  }
 }
 </style>

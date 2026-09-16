@@ -211,4 +211,62 @@ describe('imported image list', () => {
       ],
     ])
   })
+  it('emits the selected image id', async () => {
+    const wrapper = mount(
+      ImportedImageList,
+      {
+        props: {
+          images: [
+            images[0]!,
+          ],
+        },
+      },
+    )
+
+    await wrapper
+      .get('[data-select-image]')
+      .trigger('click')
+
+    expect(
+      wrapper.emitted('select'),
+    ).toEqual([
+      [
+        'image-1',
+      ],
+    ])
+  })
+
+  it('marks the selected image accessibly', () => {
+    const wrapper = mount(
+      ImportedImageList,
+      {
+        props: {
+          images,
+          selectedImageId: 'image-2',
+        },
+      },
+    )
+
+    const cards = wrapper.findAll(
+      '[data-imported-image]',
+    )
+
+    expect(
+      cards[1]
+        ?.attributes('aria-current'),
+    ).toBe('true')
+
+    expect(
+      cards[1]
+        ?.get('[data-select-image]')
+        .attributes('aria-pressed'),
+    ).toBe('true')
+
+    expect(
+      cards[0]
+        ?.get('[data-select-image]')
+        .attributes('aria-pressed'),
+    ).toBe('false')
+  })
+
 })
