@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import type { ImportedImage } from '../../types/image'
+import {
+  SUPPORTED_IMAGE_MIME_TYPES,
+} from '../../types/image'
+
+import type {
+  ImportedImage,
+} from '../../types/image'
 
 defineProps<{
   images: readonly ImportedImage[]
@@ -7,7 +13,55 @@ defineProps<{
 
 const emit = defineEmits<{
   remove: [id: string]
+  move: [
+    id: string,
+    targetIndex: number,
+  ]
+  replace: [
+    id: string,
+    file: File,
+  ]
 }>()
+
+const acceptedImageTypes
+  = SUPPORTED_IMAGE_MIME_TYPES.join(',')
+
+function openReplacementPicker(
+  event: MouseEvent,
+): void {
+  const button
+    = event.currentTarget as HTMLButtonElement
+
+  const input = button
+    .parentElement
+    ?.querySelector<HTMLInputElement>(
+      '[data-replace-image-input]',
+    )
+
+  input?.click()
+}
+
+function handleReplacement(
+  imageId: string,
+  event: Event,
+): void {
+  const input
+    = event.target as HTMLInputElement
+
+  const file = input.files?.[0]
+
+  input.value = ''
+
+  if (!file) {
+    return
+  }
+
+  emit(
+    'replace',
+    imageId,
+    file,
+  )
+}
 </script>
 
 <template>
@@ -17,7 +71,7 @@ const emit = defineEmits<{
     data-imported-image-list
   >
     <article
-      v-for="image in images"
+      v-for="(image, index) in images"
       :key="image.id"
       class="image-card"
       data-imported-image
@@ -33,15 +87,82 @@ const emit = defineEmits<{
           {{ image.file.name }}
         </span>
 
-        <button
-          type="button"
-          class="image-card__remove"
-          :aria-label="`Supprimer ${image.file.name}`"
-          data-remove-image
-          @click="emit('remove', image.id)"
-        >
-          Supprimer
-        </button>
+        <span class="image-card__position">
+          Image {{ index + 1 }} sur {{ images.length }}
+        </span>
+
+        <div class="image-card__actions">
+          <button
+            type="button"
+            class="image-card__action"
+            :disabled="index === 0"
+            :aria-label="`Déplacer ${image.file.name} vers le haut`"
+            data-move-image-up
+            @click="
+              emit(
+                'move',
+                image.id,
+                index - 1,
+              )
+            "
+          >
+            Monter
+          </button>
+
+          <button
+            type="button"
+            class="image-card__action"
+            :disabled="
+              index === images.length - 1
+            "
+            :aria-label="`Déplacer ${image.file.name} vers le bas`"
+            data-move-image-down
+            @click="
+              emit(
+                'move',
+                image.id,
+                index + 1,
+              )
+            "
+          >
+            Descendre
+          </button>
+
+          <span class="image-card__replace">
+            <button
+              type="button"
+              class="image-card__action"
+              :aria-label="`Remplacer ${image.file.name}`"
+              data-replace-image
+              @click="openReplacementPicker"
+            >
+              Remplacer
+            </button>
+
+            <input
+              class="image-card__file-input"
+              type="file"
+              :accept="acceptedImageTypes"
+              data-replace-image-input
+              @change="
+                handleReplacement(
+                  image.id,
+                  $event,
+                )
+              "
+            >
+          </span>
+
+          <button
+            type="button"
+            class="image-card__action image-card__action--remove"
+            :aria-label="`Supprimer ${image.file.name}`"
+            data-remove-image
+            @click="emit('remove', image.id)"
+          >
+            Supprimer
+          </button>
+        </div>
       </div>
     </article>
   </div>
@@ -78,11 +199,7 @@ const emit = defineEmits<{
 }
 
 .image-card__content {
-  display: flex;
   min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
 }
 
 .image-card__name {
@@ -96,22 +213,68 @@ const emit = defineEmits<{
   white-space: nowrap;
 }
 
-.image-card__remove {
+.image-card__position {
+  display: block;
+  margin-top: 2px;
+
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.image-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  margin-top: 6px;
+}
+
+.image-card__replace {
+  display: inline-flex;
+}
+
+.image-card__action {
   padding: 0;
 
   color: #64748b;
+  font: inherit;
   font-size: 12px;
 
   border: 0;
   background: transparent;
+
+  cursor: pointer;
 }
 
-.image-card__remove:hover {
+.image-card__action:hover:not(:disabled) {
+  color: #0f172a;
+}
+
+.image-card__action:disabled {
+  color: #cbd5e1;
+
+  cursor: default;
+}
+
+.image-card__action--remove:hover:not(:disabled) {
   color: #dc2626;
 }
 
-.image-card__remove:focus-visible {
+.image-card__action:focus-visible {
   outline: 2px solid #93c5fd;
   outline-offset: 2px;
+}
+
+.image-card__file-input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+
+  white-space: nowrap;
 }
 </style>

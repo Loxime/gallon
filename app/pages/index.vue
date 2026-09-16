@@ -59,6 +59,8 @@ const {
   images,
   addFiles,
   removeImage,
+  moveImage,
+  replaceImage,
   trimToLimit,
 } = useImportedImages()
 
@@ -193,6 +195,43 @@ function handleRemoveImage(id: string): void {
   importNotice.value = ''
 }
 
+function handleMoveImage(
+  id: string,
+  targetIndex: number,
+): void {
+  moveImage(
+    id,
+    targetIndex,
+  )
+
+  importNotice.value = ''
+}
+
+function handleReplaceImage(
+  id: string,
+  file: File,
+): void {
+  const replacement = replaceImage(
+    id,
+    file,
+  )
+
+  if (!replacement) {
+    importNotice.value
+      = 'Le fichier de remplacement n’est pas pris en charge.'
+    return
+  }
+
+  resetFraming(id)
+
+  if (selectedImageId.value === id) {
+    selectedImageId.value
+      = replacement.id
+  }
+
+  importNotice.value = ''
+}
+
 watch(
   () => images.value.map(image => image.id),
   (imageIds) => {
@@ -287,6 +326,8 @@ watch(imageCapacity, (capacity) => {
           <ImportedImageList
             :images="images"
             @remove="handleRemoveImage"
+            @move="handleMoveImage"
+            @replace="handleReplaceImage"
           />
         </section>
       </div>

@@ -9,10 +9,27 @@ import type {
   ImportedImage,
 } from '../types/image'
 
-import { selectImageFiles } from '../utils/image-import'
+import {
+  moveArrayItem,
+} from '../utils/array-order'
+
+import {
+  isSupportedImageFile,
+  selectImageFiles,
+} from '../utils/image-import'
 
 export function useImportedImages() {
   const images = ref<ImportedImage[]>([])
+
+  function createImportedImage(
+    file: File,
+  ): ImportedImage {
+    return {
+      id: crypto.randomUUID(),
+      file,
+      objectUrl: URL.createObjectURL(file),
+    }
+  }
 
   function addFiles(
     files: readonly File[],
@@ -24,11 +41,9 @@ export function useImportedImages() {
     )
 
     for (const file of selection.accepted) {
-      images.value.push({
-        id: crypto.randomUUID(),
-        file,
-        objectUrl: URL.createObjectURL(file),
-      })
+      images.value.push(
+        createImportedImage(file),
+      )
     }
 
     return selection
@@ -43,15 +58,85 @@ export function useImportedImages() {
       return false
     }
 
-    const [image] = images.value.splice(index, 1)
+    const [image] = images.value.splice(
+      index,
+      1,
+    )
 
     if (!image) {
       return false
     }
 
-    URL.revokeObjectURL(image.objectUrl)
+    URL.revokeObjectURL(
+      image.objectUrl,
+    )
 
     return true
+  }
+
+  function moveImage(
+    id: string,
+    targetIndex: number,
+  ): boolean {
+    const sourceIndex = images.value.findIndex(
+      image => image.id === id,
+    )
+
+    if (
+      sourceIndex === -1
+      || !Number.isInteger(targetIndex)
+      || targetIndex < 0
+      || targetIndex >= images.value.length
+      || sourceIndex === targetIndex
+    ) {
+      return false
+    }
+
+    images.value = moveArrayItem(
+      images.value,
+      sourceIndex,
+      targetIndex,
+    )
+
+    return true
+  }
+
+  function replaceImage(
+    id: string,
+    file: File,
+  ): ImportedImage | undefined {
+    if (!isSupportedImageFile(file)) {
+      return undefined
+    }
+
+    const index = images.value.findIndex(
+      image => image.id === id,
+    )
+
+    if (index === -1) {
+      return undefined
+    }
+
+    const previousImage = images.value[index]
+
+    if (!previousImage) {
+      return undefined
+    }
+
+    const replacement
+      = createImportedImage(file)
+
+    images.value.splice(
+      index,
+      1,
+      replacement,
+    )
+
+    URL.revokeObjectURL(
+      previousImage.objectUrl,
+    )
+
+    return replacement
   }
 
   function trimToLimit(limit: number): number {
@@ -68,7 +153,9 @@ export function useImportedImages() {
     )
 
     for (const image of removedImages) {
-      URL.revokeObjectURL(image.objectUrl)
+      URL.revokeObjectURL(
+        image.objectUrl,
+      )
     }
 
     return removedImages.length
@@ -76,7 +163,9 @@ export function useImportedImages() {
 
   function clearImages(): void {
     for (const image of images.value) {
-      URL.revokeObjectURL(image.objectUrl)
+      URL.revokeObjectURL(
+        image.objectUrl,
+      )
     }
 
     images.value = []
@@ -90,6 +179,8 @@ export function useImportedImages() {
     images: readonly(images),
     addFiles,
     removeImage,
+    moveImage,
+    replaceImage,
     trimToLimit,
     clearImages,
   }
