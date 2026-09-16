@@ -20,7 +20,8 @@ SHELL := /bin/bash
 	docker-down \
 	docker-restart \
 	docker-logs \
-	docker-ps
+	docker-ps \
+	deploy-prod
 
 help:
 	@printf '%s\n' \
@@ -43,7 +44,8 @@ help:
 		'  make docker-down     Arrêter gallon' \
 		'  make docker-restart  Redémarrer gallon' \
 		'  make docker-logs     Suivre les logs' \
-		'  make docker-ps       Afficher l’état du conteneur'
+		'  make docker-ps       Afficher l’état du conteneur' \
+		'  make deploy-prod     Mettre à jour et redéployer la production'
 
 install:
 	npm ci
@@ -94,3 +96,22 @@ docker-logs:
 
 docker-ps:
 	docker compose ps
+
+deploy-prod:
+	@test "$$(git branch --show-current)" = "main" || { echo "Erreur : deploy-prod doit être lancé depuis main"; exit 1; }
+	@test -z "$$(git status --porcelain)" || { echo "Erreur : le working tree doit être propre"; exit 1; }
+	git fetch origin
+	git pull --ff-only origin main
+	docker compose up -d --build
+	@echo "Attente du healthcheck..."
+	@for i in $$(seq 1 30); do \
+		status=$$(docker inspect --format='{{.State.Health.Status}}' gallon-app-1 2>/dev/null || true); \
+		if [ "$$status" = "healthy" ]; then \
+			echo "gallon est healthy"; \
+			exit 0; \
+		fi; \
+		sleep 1; \
+	done; \
+	echo "Erreur : gallon n'est pas devenu healthy"; \
+	docker compose ps; \
+	exit 1
