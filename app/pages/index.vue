@@ -70,6 +70,9 @@ const pendingCellImportId = ref<string | null>(null)
 const cellImportInput
   = ref<HTMLInputElement | null>(null)
 
+const selectedImageReplaceInput
+  = ref<HTMLInputElement | null>(null)
+
 const acceptedImageTypes
   = SUPPORTED_IMAGE_MIME_TYPES.join(',')
 
@@ -240,6 +243,43 @@ function handleCellImportChange(
   handleCellFile(
     cellId,
     file,
+  )
+}
+
+function handleSelectedImageReplaceRequest(): void {
+  selectedImageReplaceInput.value?.click()
+}
+
+function handleSelectedImageReplaceChange(
+  event: Event,
+): void {
+  const input
+    = event.target as HTMLInputElement
+
+  const file = input.files?.[0]
+
+  input.value = ''
+
+  if (
+    !file
+    || !selectedImage.value
+  ) {
+    return
+  }
+
+  handleReplaceImage(
+    selectedImage.value.id,
+    file,
+  )
+}
+
+function handleSelectedImageRemove(): void {
+  if (!selectedImage.value) {
+    return
+  }
+
+  handleRemoveImage(
+    selectedImage.value.id,
   )
 }
 
@@ -597,6 +637,51 @@ watch(imageCapacity, (capacity) => {
           </ClientOnly>
         </div>
 
+        <div
+          v-if="selectedImage && selectedCellId"
+          class="selected-cell-actions"
+          data-selected-cell-actions
+        >
+          <div class="selected-cell-actions__content">
+            <span class="selected-cell-actions__label">
+              Image sélectionnée
+            </span>
+
+            <strong class="selected-cell-actions__name">
+              {{ selectedImage.file.name }}
+            </strong>
+          </div>
+
+          <div class="selected-cell-actions__buttons">
+            <button
+              type="button"
+              class="selected-cell-actions__button"
+              data-selected-cell-replace
+              @click="handleSelectedImageReplaceRequest"
+            >
+              Remplacer
+            </button>
+
+            <button
+              type="button"
+              class="selected-cell-actions__button selected-cell-actions__button--remove"
+              data-selected-cell-remove
+              @click="handleSelectedImageRemove"
+            >
+              Supprimer
+            </button>
+          </div>
+
+          <input
+            ref="selectedImageReplaceInput"
+            class="cell-import-input"
+            type="file"
+            :accept="acceptedImageTypes"
+            data-selected-cell-replace-input
+            @change="handleSelectedImageReplaceChange"
+          >
+        </div>
+
         <input
           ref="cellImportInput"
           class="cell-import-input"
@@ -774,6 +859,84 @@ watch(imageCapacity, (capacity) => {
   background: #e2e8f0;
 
   cursor: default;
+}
+
+.selected-cell-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-top: 16px;
+  padding: 12px 14px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  background: #ffffff;
+}
+
+.selected-cell-actions__content {
+  min-width: 0;
+}
+
+.selected-cell-actions__label {
+  display: block;
+
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.selected-cell-actions__name {
+  display: block;
+  overflow: hidden;
+
+  margin-top: 2px;
+
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-cell-actions__buttons {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.selected-cell-actions__button {
+  padding: 6px 10px;
+
+  color: #475569;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  cursor: pointer;
+}
+
+.selected-cell-actions__button:hover {
+  color: #0f172a;
+
+  background: #f8fafc;
+}
+
+.selected-cell-actions__button--remove:hover {
+  color: #b91c1c;
+
+  border-color: #fecaca;
+
+  background: #fef2f2;
+}
+
+.selected-cell-actions__button:focus-visible {
+  outline: 2px solid #475569;
+  outline-offset: 2px;
 }
 
 .cell-import-input {
