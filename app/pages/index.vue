@@ -10,7 +10,7 @@ import ImportedImageList from '../components/image-import/ImportedImageList.vue'
 import ImageGridPreview from '../components/image-grid/ImageGridPreview.vue'
 import KonvaImageGridEditor from '../components/image-grid/KonvaImageGridEditor.client.vue'
 import ImageFramingControls from '../components/image-grid/ImageFramingControls.vue'
-import GridTemplateSelector from '../components/image-grid/GridTemplateSelector.vue'
+import AppSidebar from '../components/layout/AppSidebar.vue'
 
 import { useImportedImages } from '../composables/useImportedImages'
 import { useImageFramings } from '../composables/useImageFramings'
@@ -34,11 +34,11 @@ import {
 } from '../utils/download'
 
 useHead({
-  title: 'gallon — Créateur de grille d’images',
+  title: 'gallon — Assemblage de grilles d’images',
   meta: [
     {
       name: 'description',
-      content: 'Créez et exportez simplement des grilles composées de plusieurs images.',
+      content: 'Sélectionnez une grille, ajoutez vos images et exportez votre composition.',
     },
   ],
 })
@@ -304,36 +304,32 @@ watch(imageCapacity, (capacity) => {
 </script>
 
 <template>
-  <main class="home-page">
-    <section class="hero">
-      <h1 class="hero__title">
-        Créateur de grille d’images
-      </h1>
+  <div class="app-shell">
+    <AppSidebar
+      v-model="selectedTemplateId"
+      :templates="GRID_TEMPLATES"
+    />
 
-      <p class="hero__description">
-        Assemblez plusieurs images dans une grille et exportez
-        votre composition en quelques étapes.
-      </p>
-    </section>
+    <main
+      id="accueil"
+      class="home-page"
+    >
+      <section class="hero">
+        <h1 class="hero__title">
+          Créateur de grille d’images
+        </h1>
 
-    <section class="editor">
-      <div class="editor__sidebar">
-        <section>
-          <h2 class="editor__title">
-            Choisissez une grille
-          </h2>
+        <p class="hero__description">
+          Assemblez plusieurs images dans une grille et exportez votre composition en quelques étapes.
+        </p>
+      </section>
 
-          <p class="editor__description">
-            Sélectionnez la disposition qui correspond à votre composition.
-          </p>
-
-          <GridTemplateSelector
-            v-model="selectedTemplateId"
-            :templates="GRID_TEMPLATES"
-          />
-        </section>
-
-        <section class="image-import">
+      <section class="editor">
+        <div class="editor__controls">
+<section
+            id="images"
+            class="image-import image-import--first"
+          >
           <div class="image-import__heading">
             <div>
               <h2 class="editor__title">
@@ -448,22 +444,72 @@ watch(imageCapacity, (capacity) => {
           @zoom-change="handleZoomChange"
           @reset="handleResetFraming"
         />
-      </div>
-    </section>
-  </main>
+        </div>
+      </section>
+    </main>
+  </div>
 </template>
 
 <style scoped>
+.app-shell {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+
+  min-height: 100vh;
+
+  background: #f8fafc;
+}
+
+.home-page {
+  min-width: 0;
+  padding: 24px 32px 64px;
+}
+
+.hero {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: clamp(48px, 7vw, 80px) 32px;
+
+  text-align: center;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 28px;
+
+  background: #ffffff;
+
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.05);
+}
+
+.hero__title {
+  max-width: 900px;
+  margin: 0 auto;
+
+  color: #1f2937;
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.hero__description {
+  max-width: 650px;
+  margin: 22px auto 0;
+
+  color: #64748b;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
 .editor {
   display: grid;
   grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
-  gap: 48px;
+  gap: 40px;
 
-  width: min(100%, 1100px);
-  margin: 56px auto 0;
+  width: min(100%, 1180px);
+  margin: 40px auto 0;
 }
 
-.editor__sidebar,
+.editor__controls,
 .editor__workspace {
   min-width: 0;
 }
@@ -484,6 +530,12 @@ watch(imageCapacity, (capacity) => {
 
 .image-import {
   margin-top: 40px;
+
+  scroll-margin-top: 24px;
+}
+
+.image-import--first {
+  margin-top: 0;
 }
 
 .image-import__heading {
@@ -568,10 +620,14 @@ watch(imageCapacity, (capacity) => {
 }
 
 .workspace__preview {
-  width: min(100%, 480px);
+  width: min(100%, 520px);
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
+  .home-page {
+    padding-inline: 24px;
+  }
+
   .editor {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -589,6 +645,26 @@ watch(imageCapacity, (capacity) => {
   .workspace {
     min-height: auto;
     padding: 24px;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .home-page {
+    padding: 20px 16px 48px;
+  }
+
+  .hero {
+    padding: 42px 20px;
+
+    border-radius: 22px;
+  }
+
+  .hero__title {
+    font-size: clamp(34px, 10vw, 46px);
   }
 }
 

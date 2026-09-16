@@ -12,11 +12,33 @@ describe('home page', () => {
     )
 
     expect(wrapper.text()).toContain(
-      'Choisissez une grille',
+      'Ajoutez vos images',
     )
 
     expect(wrapper.text()).toContain(
       'Aperçu',
     )
+
+    expect(wrapper.text()).not.toContain(
+      'Choisissez un modèle',
+    )
+  })
+
+  it('uses the sidebar as the grid template selector', async () => {
+    const wrapper = await mountSuspended(HomePage)
+
+    expect(
+      wrapper.get('[data-app-sidebar]').attributes('aria-label'),
+    ).toBe('Modèles de grille')
+
+    const templates = wrapper.findAll(
+      '[data-template-id]',
+    )
+
+    expect(templates).toHaveLength(4)
+
+    expect(
+      templates[0]?.attributes('aria-pressed'),
+    ).toBe('true')
   })
 })
