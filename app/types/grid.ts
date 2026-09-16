@@ -1,8 +1,14 @@
 export type GridTemplateId =
   | 'two-columns'
   | 'two-rows'
+  | 'three-columns'
+  | 'three-rows'
   | 'three-feature-left'
+  | 'three-feature-right'
+  | 'three-feature-top'
   | 'four-grid'
+  | 'four-feature-left'
+  | 'six-grid'
 
 export interface GridCell {
   readonly id: string

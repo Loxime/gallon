@@ -35,7 +35,7 @@ describe('home page', () => {
       '[data-template-id]',
     )
 
-    expect(templates).toHaveLength(4)
+    expect(templates).toHaveLength(10)
 
     expect(
       templates[0]?.attributes('aria-pressed'),

@@ -14,8 +14,14 @@ import {
 const EXPECTED_CELL_COUNTS: Record<GridTemplateId, number> = {
   'two-columns': 2,
   'two-rows': 2,
+  'three-columns': 3,
+  'three-rows': 3,
   'three-feature-left': 3,
+  'three-feature-right': 3,
+  'three-feature-top': 3,
   'four-grid': 4,
+  'four-feature-left': 4,
+  'six-grid': 6,
 }
 
 function getOverlapArea(first: GridCell, second: GridCell): number {
