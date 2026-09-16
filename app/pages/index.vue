@@ -8,9 +8,12 @@ import {
 import ImageDropzone from '../components/image-import/ImageDropzone.vue'
 import ImportedImageList from '../components/image-import/ImportedImageList.vue'
 import ImageGridPreview from '../components/image-grid/ImageGridPreview.vue'
+import KonvaImageGridEditor from '../components/image-grid/KonvaImageGridEditor.client.vue'
+import ImageFramingControls from '../components/image-grid/ImageFramingControls.vue'
 import GridTemplateSelector from '../components/image-grid/GridTemplateSelector.vue'
 
 import { useImportedImages } from '../composables/useImportedImages'
+import { useImageFramings } from '../composables/useImageFramings'
 
 import type {
   GridTemplateId,
@@ -41,6 +44,16 @@ const selectedTemplateId = ref<GridTemplateId>(
 )
 
 const importNotice = ref('')
+const selectedImageId = ref<string | null>(null)
+
+const {
+  framings,
+  getFraming,
+  setFraming,
+  updateFraming,
+  resetFraming,
+  pruneFramings,
+} = useImageFramings()
 
 const {
   images,
@@ -69,6 +82,67 @@ const availableImageSlots = computed(() => {
 const isImageImportFull = computed(() => {
   return availableImageSlots.value === 0
 })
+
+const selectedImage = computed(() => {
+  if (!selectedImageId.value) {
+    return undefined
+  }
+
+  return images.value.find(
+    image => image.id === selectedImageId.value,
+  )
+})
+
+const selectedFraming = computed(() => {
+  if (!selectedImage.value) {
+    return undefined
+  }
+
+  return getFraming(
+    selectedImage.value.id,
+  )
+})
+
+function handleSelectImage(
+  imageId: string,
+): void {
+  selectedImageId.value = imageId
+}
+
+function handleFramingChange(
+  imageId: string,
+  framing: Parameters<typeof setFraming>[1],
+): void {
+  setFraming(
+    imageId,
+    framing,
+  )
+}
+
+function handleZoomChange(
+  zoom: number,
+): void {
+  if (!selectedImageId.value) {
+    return
+  }
+
+  updateFraming(
+    selectedImageId.value,
+    {
+      zoom,
+    },
+  )
+}
+
+function handleResetFraming(): void {
+  if (!selectedImageId.value) {
+    return
+  }
+
+  resetFraming(
+    selectedImageId.value,
+  )
+}
 
 function getImportNotice(
   selection: ImageImportSelection,
@@ -118,6 +192,23 @@ function handleRemoveImage(id: string): void {
   removeImage(id)
   importNotice.value = ''
 }
+
+watch(
+  () => images.value.map(image => image.id),
+  (imageIds) => {
+    pruneFramings(imageIds)
+
+    if (
+      selectedImageId.value
+      && !imageIds.includes(selectedImageId.value)
+    ) {
+      selectedImageId.value = null
+    }
+  },
+  {
+    immediate: true,
+  },
+)
 
 watch(imageCapacity, (capacity) => {
   const removedCount = trimToLimit(capacity)
@@ -218,13 +309,36 @@ watch(imageCapacity, (capacity) => {
         </div>
 
         <div class="workspace">
-          <ImageGridPreview
-            v-if="selectedTemplate"
-            class="workspace__preview"
-            :template="selectedTemplate"
-            :images="images"
-          />
+          <ClientOnly v-if="selectedTemplate">
+            <KonvaImageGridEditor
+              class="workspace__preview"
+              :template="selectedTemplate"
+              :images="images"
+              :framings="framings"
+              :selected-image-id="selectedImageId"
+              @select="handleSelectImage"
+              @framing-change="handleFramingChange"
+            />
+
+            <template #fallback>
+              <ImageGridPreview
+                class="workspace__preview"
+                :template="selectedTemplate"
+                :images="images"
+                :framings="framings"
+                :selected-image-id="selectedImageId"
+              />
+            </template>
+          </ClientOnly>
         </div>
+
+        <ImageFramingControls
+          v-if="selectedImage && selectedFraming"
+          :image-name="selectedImage.file.name"
+          :framing="selectedFraming"
+          @zoom-change="handleZoomChange"
+          @reset="handleResetFraming"
+        />
       </div>
     </section>
   </main>
