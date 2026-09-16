@@ -7,7 +7,7 @@ import {
 
 import ImageDropzone from '../components/image-import/ImageDropzone.vue'
 import ImportedImageList from '../components/image-import/ImportedImageList.vue'
-import GridTemplatePreview from '../components/image-grid/GridTemplatePreview.vue'
+import ImageGridPreview from '../components/image-grid/ImageGridPreview.vue'
 import GridTemplateSelector from '../components/image-grid/GridTemplateSelector.vue'
 
 import { useImportedImages } from '../composables/useImportedImages'
@@ -218,10 +218,11 @@ watch(imageCapacity, (capacity) => {
         </div>
 
         <div class="workspace">
-          <GridTemplatePreview
+          <ImageGridPreview
             v-if="selectedTemplate"
             class="workspace__preview"
             :template="selectedTemplate"
+            :images="images"
           />
         </div>
       </div>
