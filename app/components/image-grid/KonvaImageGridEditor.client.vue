@@ -48,6 +48,14 @@ import {
   loadImageResource,
 } from '../../utils/image-loader'
 
+import type {
+  ExportableKonvaStage,
+} from '../../utils/png-export'
+
+import {
+  exportKonvaStageAsPng,
+} from '../../utils/png-export'
+
 const props = withDefaults(defineProps<{
   template: GridTemplate
   images: readonly ImportedImage[]
@@ -90,7 +98,12 @@ interface DragEvent {
   }
 }
 
+interface KonvaStageComponent {
+  getNode: () => ExportableKonvaStage
+}
+
 const container = ref<HTMLElement>()
+const stageComponent = ref<KonvaStageComponent>()
 const stageWidth = ref(480)
 
 const loadedImages = shallowRef(
@@ -308,6 +321,30 @@ const cells = computed(() => {
   )
 })
 
+function exportPng(): string {
+  if (!supportsCanvas) {
+    throw new Error(
+      'PNG export requires canvas support',
+    )
+  }
+
+  const stage = stageComponent.value?.getNode()
+
+  if (!stage) {
+    throw new Error(
+      'Image grid is not ready to export',
+    )
+  }
+
+  return exportKonvaStageAsPng(
+    stage,
+  )
+}
+
+defineExpose({
+  exportPng,
+})
+
 function handleSelect(
   imageId: string,
 ): void {
@@ -379,6 +416,7 @@ function handleDragEnd(
 
     <VStage
       v-else
+      ref="stageComponent"
       :config="{
         width: stageWidth,
         height: stageHeight,
@@ -431,6 +469,7 @@ function handleDragEnd(
               stroke: '#2563eb',
               strokeWidth: 4,
               listening: false,
+              name: 'editor-overlay',
             }"
           />
         </VGroup>
