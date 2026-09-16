@@ -29,6 +29,10 @@ import {
   getGridTemplateById,
 } from '../utils/grid-templates'
 
+import {
+  downloadDataUrl,
+} from '../utils/download'
+
 useHead({
   title: 'gallon — Créateur de grille d’images',
   meta: [
@@ -39,11 +43,20 @@ useHead({
   ],
 })
 
+interface ImageGridEditorHandle {
+  exportPng: () => string
+}
+
 const selectedTemplateId = ref<GridTemplateId>(
   DEFAULT_GRID_TEMPLATE_ID,
 )
 
+const imageGridEditor = ref<ImageGridEditorHandle | null>(
+  null,
+)
+
 const importNotice = ref('')
+const exportNotice = ref('')
 const selectedImageId = ref<string | null>(null)
 
 const {
@@ -83,6 +96,10 @@ const availableImageSlots = computed(() => {
 
 const isImageImportFull = computed(() => {
   return availableImageSlots.value === 0
+})
+
+const canExport = computed(() => {
+  return images.value.length > 0
 })
 
 const selectedImage = computed(() => {
@@ -144,6 +161,34 @@ function handleResetFraming(): void {
   resetFraming(
     selectedImageId.value,
   )
+}
+
+function handleExportPng(): void {
+  if (!canExport.value) {
+    return
+  }
+
+  try {
+    const dataUrl
+      = imageGridEditor.value?.exportPng()
+
+    if (!dataUrl) {
+      throw new Error(
+        'Image grid is not ready to export',
+      )
+    }
+
+    downloadDataUrl(
+      dataUrl,
+      'gallon-grid.png',
+    )
+
+    exportNotice.value = ''
+  }
+  catch {
+    exportNotice.value
+      = 'Impossible d’exporter la grille pour le moment.'
+  }
 }
 
 function getImportNotice(
@@ -347,11 +392,22 @@ watch(imageCapacity, (capacity) => {
               {{ selectedTemplate.label }}
             </p>
           </div>
+
+          <button
+            type="button"
+            class="export-button"
+            :disabled="!canExport"
+            data-export-png
+            @click="handleExportPng"
+          >
+            Télécharger le PNG
+          </button>
         </div>
 
         <div class="workspace">
           <ClientOnly v-if="selectedTemplate">
             <KonvaImageGridEditor
+              ref="imageGridEditor"
               class="workspace__preview"
               :template="selectedTemplate"
               :images="images"
@@ -372,6 +428,16 @@ watch(imageCapacity, (capacity) => {
             </template>
           </ClientOnly>
         </div>
+
+        <p
+          v-if="exportNotice"
+          class="export-notice"
+          role="status"
+          aria-live="polite"
+          data-export-notice
+        >
+          {{ exportNotice }}
+        </p>
 
         <ImageFramingControls
           v-if="selectedImage && selectedFraming"
@@ -435,6 +501,54 @@ watch(imageCapacity, (capacity) => {
 
 .image-import__notice {
   color: #92400e;
+}
+
+.workspace-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.export-button {
+  padding: 10px 14px;
+
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #0f172a;
+
+  cursor: pointer;
+}
+
+.export-button:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+.export-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.export-button:disabled {
+  color: #94a3b8;
+
+  background: #e2e8f0;
+
+  cursor: default;
+}
+
+.export-notice {
+  margin: 12px 0 0;
+
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .workspace {
