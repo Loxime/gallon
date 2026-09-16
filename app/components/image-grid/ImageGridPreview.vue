@@ -14,6 +14,10 @@ import type {
 } from '../../types/image'
 
 import type {
+  ImageFraming,
+} from '../../types/image-framing'
+
+import type {
   LoadedImageResource,
 } from '../../utils/image-loader'
 
@@ -22,12 +26,22 @@ import {
 } from '../../utils/image-loader'
 
 import {
-  calculateRelativeCoverPlacement,
-} from '../../utils/image-placement'
+  DEFAULT_IMAGE_FRAMING,
+  calculateFramedImagePlacement,
+} from '../../utils/image-framing'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   template: GridTemplate
   images: readonly ImportedImage[]
+  framings?: Readonly<Record<string, ImageFraming>>
+  selectedImageId?: string | null
+}>(), {
+  framings: () => ({}),
+  selectedImageId: null,
+})
+
+const emit = defineEmits<{
+  select: [imageId: string]
 }>()
 
 const loadedImages = shallowRef(
@@ -130,10 +144,15 @@ const cells = computed(() => {
           * props.template.aspectRatio.height,
       }
 
+      const framing
+        = props.framings[image.id]
+          ?? DEFAULT_IMAGE_FRAMING
+
       const placement
-        = calculateRelativeCoverPlacement(
+        = calculateFramedImagePlacement(
           resource.dimensions,
           target,
+          framing,
         )
 
       return {
@@ -158,10 +177,15 @@ const cells = computed(() => {
       aspectRatio: `${template.aspectRatio.width} / ${template.aspectRatio.height}`,
     }"
   >
-    <div
+    <button
       v-for="item in cells"
       :key="item.cell.id"
+      type="button"
       class="image-grid-preview__cell"
+      :class="{
+        'image-grid-preview__cell--selected':
+          item.image?.id === selectedImageId,
+      }"
       :style="{
         left: `${item.cell.x * 100}%`,
         top: `${item.cell.y * 100}%`,
@@ -169,7 +193,17 @@ const cells = computed(() => {
         height: `${item.cell.height * 100}%`,
       }"
       :data-cell-id="item.cell.id"
+      :disabled="!item.image"
+      :aria-pressed="
+        item.image
+          ? item.image.id === selectedImageId
+          : undefined
+      "
       data-grid-cell
+      @click="
+        item.image
+          && emit('select', item.image.id)
+      "
     >
       <img
         v-if="item.image && item.imageStyle"
@@ -180,7 +214,7 @@ const cells = computed(() => {
         :data-image-id="item.image.id"
         data-grid-image
       >
-    </div>
+    </button>
   </div>
 </template>
 
@@ -199,9 +233,27 @@ const cells = computed(() => {
 .image-grid-preview__cell {
   position: absolute;
   overflow: hidden;
+  padding: 0;
 
   border: 2px solid #ffffff;
   background: #cbd5e1;
+}
+
+.image-grid-preview__cell:not(:disabled) {
+  cursor: pointer;
+}
+
+.image-grid-preview__cell:focus-visible {
+  z-index: 2;
+
+  outline: 3px solid #2563eb;
+  outline-offset: -3px;
+}
+
+.image-grid-preview__cell--selected {
+  z-index: 1;
+
+  box-shadow: inset 0 0 0 3px #2563eb;
 }
 
 .image-grid-preview__image {
