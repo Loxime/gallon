@@ -245,6 +245,165 @@ describe('imported images', () => {
     )
   })
 
+  it('moves an imported image to another position', () => {
+    const { composable } = mountComposable()
+
+    composable.addFiles(
+      [
+        createFile('first.jpg'),
+        createFile('second.jpg'),
+        createFile('third.jpg'),
+      ],
+      3,
+    )
+
+    const firstImage = composable.images.value[0]
+
+    expect(firstImage).toBeDefined()
+
+    if (!firstImage) {
+      return
+    }
+
+    expect(
+      composable.moveImage(
+        firstImage.id,
+        2,
+      ),
+    ).toBe(true)
+
+    expect(
+      composable.images.value.map(
+        image => image.file.name,
+      ),
+    ).toEqual([
+      'second.jpg',
+      'third.jpg',
+      'first.jpg',
+    ])
+  })
+
+  it('keeps image identity when reordering', () => {
+    const { composable } = mountComposable()
+
+    composable.addFiles(
+      [
+        createFile('first.jpg'),
+        createFile('second.jpg'),
+      ],
+      2,
+    )
+
+    const firstImage = composable.images.value[0]
+
+    expect(firstImage).toBeDefined()
+
+    if (!firstImage) {
+      return
+    }
+
+    composable.moveImage(
+      firstImage.id,
+      1,
+    )
+
+    expect(
+      composable.images.value[1]?.id,
+    ).toBe(
+      firstImage.id,
+    )
+  })
+
+  it('replaces an image in the same position', () => {
+    const { composable } = mountComposable()
+
+    composable.addFiles(
+      [
+        createFile('first.jpg'),
+        createFile('second.jpg'),
+      ],
+      2,
+    )
+
+    const firstImage = composable.images.value[0]
+
+    expect(firstImage).toBeDefined()
+
+    if (!firstImage) {
+      return
+    }
+
+    const replacement = composable.replaceImage(
+      firstImage.id,
+      createFile(
+        'replacement.png',
+        'image/png',
+      ),
+    )
+
+    expect(replacement).toBeDefined()
+
+    expect(
+      composable.images.value.map(
+        image => image.file.name,
+      ),
+    ).toEqual([
+      'replacement.png',
+      'second.jpg',
+    ])
+
+    expect(
+      replacement?.id,
+    ).not.toBe(
+      firstImage.id,
+    )
+
+    expect(
+      revokeObjectURL,
+    ).toHaveBeenCalledWith(
+      'blob:first.jpg',
+    )
+  })
+
+  it('rejects an unsupported replacement', () => {
+    const { composable } = mountComposable()
+
+    composable.addFiles(
+      [
+        createFile('photo.jpg'),
+      ],
+      1,
+    )
+
+    const image = composable.images.value[0]
+
+    expect(image).toBeDefined()
+
+    if (!image) {
+      return
+    }
+
+    const replacement = composable.replaceImage(
+      image.id,
+      createFile(
+        'document.pdf',
+        'application/pdf',
+      ),
+    )
+
+    expect(replacement).toBeUndefined()
+
+    expect(
+      composable.images.value[0]?.id,
+    ).toBe(
+      image.id,
+    )
+
+    expect(
+      revokeObjectURL,
+    ).not.toHaveBeenCalled()
+  })
+
   it('cleans object URLs when the owner component is unmounted', () => {
     const {
       composable,
