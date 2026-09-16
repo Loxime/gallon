@@ -16,6 +16,8 @@ html {
 
   color: #1f2937;
   background: #f8fafc;
+
+  scroll-behavior: smooth;
 }
 
 body {
@@ -31,30 +33,4 @@ input {
 
 button {
   cursor: pointer;
-}
-
-.home-page {
-  min-height: 100vh;
-  padding: 64px 24px;
-}
-
-.hero {
-  width: min(100%, 1100px);
-  margin: 0 auto;
-}
-
-.hero__title {
-  margin: 0;
-
-  font-size: clamp(32px, 5vw, 56px);
-  line-height: 1.05;
-}
-
-.hero__description {
-  max-width: 600px;
-  margin: 24px 0 0;
-
-  color: #64748b;
-  font-size: 18px;
-  line-height: 1.6;
 }
