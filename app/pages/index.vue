@@ -65,6 +65,7 @@ const exportNotice = ref('')
 const selectedImageId = ref<string | null>(null)
 const selectedCellId = ref<string | null>(null)
 const moveSourceImageId = ref<string | null>(null)
+const gridSpacing = ref(0)
 
 const pendingCellImportId = ref<string | null>(null)
 
@@ -602,6 +603,36 @@ watch(imageCapacity, (capacity) => {
           </button>
         </div>
 
+        <label
+          class="grid-spacing-control"
+          for="grid-spacing"
+        >
+          <span class="grid-spacing-control__heading">
+            <span class="grid-spacing-control__label">
+              Espacement
+            </span>
+
+            <output
+              class="grid-spacing-control__value"
+              for="grid-spacing"
+              data-grid-spacing-value
+            >
+              {{ gridSpacing }} px
+            </output>
+          </span>
+
+          <input
+            id="grid-spacing"
+            v-model.number="gridSpacing"
+            class="grid-spacing-control__input"
+            type="range"
+            min="0"
+            max="48"
+            step="2"
+            data-grid-spacing
+          >
+        </label>
+
         <div class="workspace">
           <ClientOnly v-if="selectedTemplate">
             <KonvaImageGridEditor
@@ -614,6 +645,7 @@ watch(imageCapacity, (capacity) => {
               :selected-image-id="selectedImageId"
               :selected-cell-id="selectedCellId"
               :move-source-image-id="moveSourceImageId"
+              :spacing="gridSpacing"
               @select="handleSelectImage"
               @select-cell="handleSelectCell"
               @request-import="handleRequestCellImport"
@@ -632,6 +664,7 @@ watch(imageCapacity, (capacity) => {
                 :selected-image-id="selectedImageId"
                 :selected-cell-id="selectedCellId"
                 :move-source-image-id="moveSourceImageId"
+                :spacing="gridSpacing"
                 @select="handleSelectImage"
                 @select-cell="handleSelectCell"
                 @request-import="handleRequestCellImport"
@@ -890,6 +923,54 @@ watch(imageCapacity, (capacity) => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+}
+
+.grid-spacing-control {
+  display: block;
+
+  width: min(100%, 760px);
+  margin: 0 auto 16px;
+  padding: 12px 14px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  background: #ffffff;
+}
+
+.grid-spacing-control__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.grid-spacing-control__label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.grid-spacing-control__value {
+  color: #64748b;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid-spacing-control__input {
+  display: block;
+
+  width: 100%;
+  margin-top: 10px;
+
+  accent-color: #2563eb;
+
+  cursor: pointer;
+}
+
+.grid-spacing-control__input:focus-visible {
+  outline: 3px solid #bfdbfe;
+  outline-offset: 3px;
 }
 
 .export-button {
