@@ -488,10 +488,10 @@ describe('image management integration', () => {
 
     await wrapper
       .get('[data-framing-zoom]')
-      .setValue('2')
+      .setValue('0.5')
 
     expect(wrapper.text()).toContain(
-      '200 %',
+      '50 %',
     )
 
     await wrapper
@@ -502,7 +502,7 @@ describe('image management integration', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain(
-      '200 %',
+      '50 %',
     )
 
     expect(

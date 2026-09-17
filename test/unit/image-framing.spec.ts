@@ -6,6 +6,7 @@ import {
 
 import {
   DEFAULT_IMAGE_FRAMING,
+  MIN_IMAGE_FRAMING_ZOOM,
   calculateFramedImagePlacement,
   constrainImageFraming,
 } from '../../app/utils/image-framing'
@@ -39,7 +40,7 @@ describe('image framing', () => {
     expect(placement.offsetY).toBeCloseTo(0)
   })
 
-  it('prevents zooming below the cover scale', () => {
+  it('allows zooming below the cover scale', () => {
     const framing = constrainImageFraming(
       {
         width: 1000,
@@ -47,13 +48,98 @@ describe('image framing', () => {
       },
       squareTarget,
       {
-        zoom: 0.25,
+        zoom: 0.5,
         panX: 0,
         panY: 0,
       },
     )
 
-    expect(framing.zoom).toBe(1)
+    expect(framing).toEqual({
+      zoom: 0.5,
+      panX: 0,
+      panY: 0,
+    })
+  })
+
+  it('clamps zoom to the minimum framing zoom', () => {
+    const framing = constrainImageFraming(
+      {
+        width: 1000,
+        height: 1000,
+      },
+      squareTarget,
+      {
+        zoom: 0.01,
+        panX: 0,
+        panY: 0,
+      },
+    )
+
+    expect(framing.zoom).toBe(
+      MIN_IMAGE_FRAMING_ZOOM,
+    )
+  })
+
+  it('centers an under-zoomed image on axes without overflow', () => {
+    const framing = constrainImageFraming(
+      {
+        width: 1000,
+        height: 1000,
+      },
+      squareTarget,
+      {
+        zoom: 0.5,
+        panX: 10,
+        panY: -10,
+      },
+    )
+
+    expect(framing).toEqual({
+      zoom: 0.5,
+      panX: 0,
+      panY: 0,
+    })
+  })
+
+  it('keeps panning on an axis that still overflows while under-zoomed', () => {
+    const framing = constrainImageFraming(
+      {
+        width: 2400,
+        height: 800,
+      },
+      squareTarget,
+      {
+        zoom: 0.5,
+        panX: 10,
+        panY: 10,
+      },
+    )
+
+    expect(framing.zoom).toBe(0.5)
+    expect(framing.panX).toBeCloseTo(0.25)
+    expect(framing.panY).toBe(0)
+  })
+
+  it('places a fully under-zoomed image in the center', () => {
+    const placement = calculateFramedImagePlacement(
+      {
+        width: 1000,
+        height: 1000,
+      },
+      squareTarget,
+      {
+        zoom: 0.5,
+        panX: 10,
+        panY: -10,
+      },
+    )
+
+    expect(placement).toEqual({
+      width: 0.5,
+      height: 0.5,
+      offsetX: 0.25,
+      offsetY: 0.25,
+    })
   })
 
   it('prevents horizontal panning beyond the image edge', () => {

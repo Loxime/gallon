@@ -147,7 +147,11 @@ describe('image framing integration', () => {
 
     await wrapper
       .get('[data-framing-zoom]')
-      .setValue('2')
+      .setValue('0.5')
+
+    expect(wrapper.text()).toContain(
+      '50 %',
+    )
 
     await wrapper
       .get('[data-reset-framing]')

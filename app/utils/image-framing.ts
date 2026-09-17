@@ -11,6 +11,8 @@ import {
   calculateRelativeCoverPlacement,
 } from './image-placement'
 
+export const MIN_IMAGE_FRAMING_ZOOM = 0.25
+
 export const DEFAULT_IMAGE_FRAMING: ImageFraming = {
   zoom: 1,
   panX: 0,
@@ -36,10 +38,67 @@ function clamp(
   minimum: number,
   maximum: number,
 ): number {
-  return Math.min(
+  const clamped = Math.min(
     maximum,
     Math.max(minimum, value),
   )
+
+  return Object.is(clamped, -0)
+    ? 0
+    : clamped
+}
+
+export function constrainFramedImagePosition(
+  cell: {
+    readonly x: number
+    readonly y: number
+    readonly width: number
+    readonly height: number
+  },
+  image: ImageDimensions,
+  position: {
+    readonly x: number
+    readonly y: number
+  },
+): {
+  readonly x: number
+  readonly y: number
+} {
+  const constrainAxis = (
+    cellStart: number,
+    cellSize: number,
+    imageSize: number,
+    value: number,
+  ): number => {
+    if (imageSize <= cellSize) {
+      return (
+        cellStart
+        + (cellSize - imageSize) / 2
+      )
+    }
+
+    return clamp(
+      value,
+      cellStart + cellSize - imageSize,
+      cellStart,
+    )
+  }
+
+  return {
+    x: constrainAxis(
+      cell.x,
+      cell.width,
+      image.width,
+      position.x,
+    ),
+
+    y: constrainAxis(
+      cell.y,
+      cell.height,
+      image.height,
+      position.y,
+    ),
+  }
 }
 
 export function constrainImageFraming(
@@ -50,7 +109,7 @@ export function constrainImageFraming(
   assertFiniteFraming(framing)
 
   const zoom = Math.max(
-    1,
+    MIN_IMAGE_FRAMING_ZOOM,
     framing.zoom,
   )
 

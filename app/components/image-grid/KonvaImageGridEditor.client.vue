@@ -46,6 +46,7 @@ import {
   DEFAULT_IMAGE_FRAMING,
   calculateFramedImagePlacement,
   calculateFramingFromPosition,
+  constrainFramedImagePosition,
 } from '../../utils/image-framing'
 
 import {
@@ -333,33 +334,19 @@ const cells = computed(() => {
               y: number
             },
           ) => {
-            const minimumX
-              = x + width - imageWidth
-
-            const maximumX = x
-
-            const minimumY
-              = y + height - imageHeight
-
-            const maximumY = y
-
-            return {
-              x: Math.min(
-                maximumX,
-                Math.max(
-                  minimumX,
-                  position.x,
-                ),
-              ),
-
-              y: Math.min(
-                maximumY,
-                Math.max(
-                  minimumY,
-                  position.y,
-                ),
-              ),
-            }
+            return constrainFramedImagePosition(
+              {
+                x,
+                y,
+                width,
+                height,
+              },
+              {
+                width: imageWidth,
+                height: imageHeight,
+              },
+              position,
+            )
           },
         },
       }
