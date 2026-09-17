@@ -262,7 +262,7 @@ function handleReplacement(
   flex-wrap: wrap;
   gap: 8px;
 
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .image-card__replace {
@@ -270,39 +270,65 @@ function handleReplacement(
 }
 
 .image-card__action {
-  padding: 0;
+  min-height: 34px;
+  padding: 6px 10px;
 
-  color: #64748b;
+  color: #475569;
   font: inherit;
   font-size: 12px;
+  font-weight: 600;
 
-  border: 0;
-  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  background: #ffffff;
 
   cursor: pointer;
+
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 .image-card__action:hover:not(:disabled) {
   color: #0f172a;
+
+  border-color: #cbd5e1;
+  background: #f8fafc;
 }
 
 .image-card__action--selected {
-  color: #2563eb;
-  font-weight: 600;
+  color: #1d4ed8;
+
+  border-color: #bfdbfe;
+  background: #eff6ff;
 }
 
 .image-card__action:disabled {
   color: #cbd5e1;
 
-  cursor: default;
+  border-color: #f1f5f9;
+  background: #f8fafc;
+
+  cursor: not-allowed;
+}
+
+.image-card__action--remove {
+  color: #b91c1c;
+
+  border-color: #fecaca;
 }
 
 .image-card__action--remove:hover:not(:disabled) {
-  color: #dc2626;
+  color: #991b1b;
+
+  border-color: #fca5a5;
+  background: #fef2f2;
 }
 
 .image-card__action:focus-visible {
-  outline: 2px solid #93c5fd;
+  outline: 3px solid #bfdbfe;
   outline-offset: 2px;
 }
 

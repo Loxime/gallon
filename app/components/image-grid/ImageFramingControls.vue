@@ -100,7 +100,8 @@ function handleZoomInput(event: Event): void {
 .framing-controls__reset {
   align-self: flex-start;
 
-  padding: 8px 10px;
+  min-height: 38px;
+  padding: 8px 12px;
 
   color: #475569;
   font: inherit;
@@ -108,21 +109,27 @@ function handleZoomInput(event: Event): void {
   font-weight: 600;
 
   border: 1px solid #cbd5e1;
-  border-radius: 7px;
+  border-radius: 9px;
 
   background: #ffffff;
 
   cursor: pointer;
+
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 .framing-controls__reset:hover {
   color: #0f172a;
 
   border-color: #94a3b8;
+  background: #f8fafc;
 }
 
 .framing-controls__reset:focus-visible {
-  outline: 3px solid #93c5fd;
+  outline: 3px solid #bfdbfe;
   outline-offset: 2px;
 }
 

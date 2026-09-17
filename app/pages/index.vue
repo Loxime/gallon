@@ -893,23 +893,45 @@ watch(imageCapacity, (capacity) => {
 }
 
 .export-button {
-  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 42px;
+  padding: 10px 16px;
 
   color: #ffffff;
   font: inherit;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 650;
 
-  border: 0;
-  border-radius: 8px;
+  border: 1px solid #0f172a;
+  border-radius: 10px;
 
   background: #0f172a;
 
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+
   cursor: pointer;
+
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
 }
 
 .export-button:hover:not(:disabled) {
+  border-color: #1e293b;
   background: #1e293b;
+
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.14);
+}
+
+.export-button:active:not(:disabled) {
+  transform: translateY(1px);
+
+  box-shadow: none;
 }
 
 .export-button:focus-visible {
@@ -920,9 +942,12 @@ watch(imageCapacity, (capacity) => {
 .export-button:disabled {
   color: #94a3b8;
 
-  background: #e2e8f0;
+  border-color: #e2e8f0;
+  background: #f1f5f9;
 
-  cursor: default;
+  box-shadow: none;
+
+  cursor: not-allowed;
 }
 
 .selected-cell-actions {
