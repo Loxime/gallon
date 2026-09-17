@@ -207,4 +207,88 @@ describe('image assignments', () => {
       'cell-1': 'image-a',
     })
   })
+  it('moves an assigned image to an empty cell', () => {
+    const {
+      assignments,
+      assignImage,
+      moveImageToCell,
+    } = useImageAssignments()
+
+    assignImage(
+      'cell-1',
+      'image-a',
+    )
+
+    assignImage(
+      'cell-2',
+      'image-b',
+    )
+
+    expect(
+      moveImageToCell(
+        'image-a',
+        'cell-3',
+      ),
+    ).toBe(true)
+
+    expect(assignments.value).toEqual({
+      'cell-2': 'image-b',
+      'cell-3': 'image-a',
+    })
+  })
+
+  it('swaps images when moving to an occupied cell', () => {
+    const {
+      assignments,
+      assignImage,
+      moveImageToCell,
+    } = useImageAssignments()
+
+    assignImage(
+      'cell-1',
+      'image-a',
+    )
+
+    assignImage(
+      'cell-2',
+      'image-b',
+    )
+
+    expect(
+      moveImageToCell(
+        'image-a',
+        'cell-2',
+      ),
+    ).toBe(true)
+
+    expect(assignments.value).toEqual({
+      'cell-1': 'image-b',
+      'cell-2': 'image-a',
+    })
+  })
+
+  it('does not move an image to its current cell', () => {
+    const {
+      assignments,
+      assignImage,
+      moveImageToCell,
+    } = useImageAssignments()
+
+    assignImage(
+      'cell-1',
+      'image-a',
+    )
+
+    expect(
+      moveImageToCell(
+        'image-a',
+        'cell-1',
+      ),
+    ).toBe(false)
+
+    expect(assignments.value).toEqual({
+      'cell-1': 'image-a',
+    })
+  })
+
 })
