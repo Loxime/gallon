@@ -69,6 +69,41 @@ export function useImageAssignments() {
     return unassignCell(cellId)
   }
 
+  function moveImageToCell(
+    imageId: string,
+    targetCellId: string,
+  ): boolean {
+    const sourceCellId = getCellIdForImage(
+      imageId,
+    )
+
+    if (
+      !sourceCellId
+      || sourceCellId === targetCellId
+    ) {
+      return false
+    }
+
+    const targetImageId
+      = assignments.value[targetCellId]
+
+    const next = Object.fromEntries(
+      Object.entries(assignments.value).filter(
+        ([cellId]) => cellId !== sourceCellId,
+      ),
+    )
+
+    next[targetCellId] = imageId
+
+    if (targetImageId) {
+      next[sourceCellId] = targetImageId
+    }
+
+    assignments.value = next
+
+    return true
+  }
+
   function replaceImage(
     previousImageId: string,
     nextImageId: string,
@@ -190,6 +225,7 @@ export function useImageAssignments() {
     assignImage,
     unassignCell,
     unassignImage,
+    moveImageToCell,
     replaceImage,
     assignSequentially,
     syncAssignments,

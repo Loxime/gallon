@@ -314,4 +314,203 @@ describe('image management integration', () => {
       'blob:original.jpg',
     )
   })
+  it('moves the selected image to an empty grid cell', async () => {
+    const wrapper = await mountSuspended(
+      HomePage,
+    )
+
+    await importFiles(
+      wrapper,
+      [
+        createFile('move-me.jpg'),
+      ],
+    )
+
+    const cellsBefore = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    await cellsBefore[0]?.trigger('click')
+
+    await wrapper
+      .get('[data-selected-cell-move]')
+      .trigger('click')
+
+    expect(
+      wrapper
+        .get('[data-selected-cell-move]')
+        .text(),
+    ).toContain('Annuler')
+
+    await cellsBefore[1]?.trigger('click')
+    await flushPromises()
+
+    const cellsAfter = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    expect(
+      cellsAfter[0]
+        ?.find('[data-grid-image]')
+        .exists(),
+    ).toBe(false)
+
+    expect(
+      cellsAfter[1]
+        ?.get('[data-grid-image]')
+        .attributes('src'),
+    ).toBe('blob:move-me.jpg')
+
+    expect(
+      wrapper
+        .get('[data-selected-cell-move]')
+        .text(),
+    ).toContain('Déplacer')
+  })
+
+  it('swaps images when moving to an occupied grid cell', async () => {
+    const wrapper = await mountSuspended(
+      HomePage,
+    )
+
+    await importFiles(
+      wrapper,
+      [
+        createFile('first.jpg'),
+        createFile('second.jpg'),
+      ],
+    )
+
+    const cellsBefore = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    await cellsBefore[0]?.trigger('click')
+
+    await wrapper
+      .get('[data-selected-cell-move]')
+      .trigger('click')
+
+    await cellsBefore[1]?.trigger('click')
+    await flushPromises()
+
+    const cellsAfter = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    expect(
+      cellsAfter[0]
+        ?.get('[data-grid-image]')
+        .attributes('src'),
+    ).toBe('blob:second.jpg')
+
+    expect(
+      cellsAfter[1]
+        ?.get('[data-grid-image]')
+        .attributes('src'),
+    ).toBe('blob:first.jpg')
+  })
+
+  it('cancels image move mode', async () => {
+    const wrapper = await mountSuspended(
+      HomePage,
+    )
+
+    await importFiles(
+      wrapper,
+      [
+        createFile('cancel-move.jpg'),
+      ],
+    )
+
+    const cells = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    await cells[0]?.trigger('click')
+
+    const moveButton = wrapper.get(
+      '[data-selected-cell-move]',
+    )
+
+    await moveButton.trigger('click')
+
+    expect(moveButton.text()).toContain(
+      'Annuler',
+    )
+
+    expect(
+      wrapper.findAll(
+        '.image-grid-preview__cell--move-target',
+      ),
+    ).toHaveLength(2)
+
+    await moveButton.trigger('click')
+    await flushPromises()
+
+    expect(
+      wrapper
+        .get('[data-selected-cell-move]')
+        .text(),
+    ).toContain('Déplacer')
+
+    expect(
+      wrapper.findAll(
+        '.image-grid-preview__cell--move-target',
+      ),
+    ).toHaveLength(0)
+
+    expect(
+      wrapper
+        .findAll('[data-grid-cell]')[0]
+        ?.get('[data-grid-image]')
+        .attributes('src'),
+    ).toBe('blob:cancel-move.jpg')
+  })
+
+  it('preserves framing when moving an image', async () => {
+    const wrapper = await mountSuspended(
+      HomePage,
+    )
+
+    await importFiles(
+      wrapper,
+      [
+        createFile('framed.jpg'),
+      ],
+    )
+
+    const cellsBefore = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    await cellsBefore[0]?.trigger('click')
+
+    await wrapper
+      .get('[data-framing-zoom]')
+      .setValue('2')
+
+    expect(wrapper.text()).toContain(
+      '200 %',
+    )
+
+    await wrapper
+      .get('[data-selected-cell-move]')
+      .trigger('click')
+
+    await cellsBefore[1]?.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain(
+      '200 %',
+    )
+
+    expect(
+      wrapper
+        .findAll('[data-grid-cell]')[1]
+        ?.get('[data-grid-image]')
+        .attributes('src'),
+    ).toBe('blob:framed.jpg')
+  })
+
 })

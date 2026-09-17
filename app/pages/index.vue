@@ -64,6 +64,7 @@ const importNotice = ref('')
 const exportNotice = ref('')
 const selectedImageId = ref<string | null>(null)
 const selectedCellId = ref<string | null>(null)
+const moveSourceImageId = ref<string | null>(null)
 
 const pendingCellImportId = ref<string | null>(null)
 
@@ -97,6 +98,7 @@ const {
 const {
   assignments,
   assignImage,
+  moveImageToCell,
   replaceImage: replaceImageAssignment,
   assignSequentially,
   syncAssignments,
@@ -151,6 +153,13 @@ const selectedFraming = computed(() => {
 function handleSelectImage(
   imageId: string,
 ): void {
+  if (
+    moveSourceImageId.value
+    && moveSourceImageId.value !== imageId
+  ) {
+    moveSourceImageId.value = null
+  }
+
   selectedImageId.value = imageId
 
   selectedCellId.value
@@ -244,6 +253,40 @@ function handleCellImportChange(
     cellId,
     file,
   )
+}
+
+function handleMoveModeToggle(): void {
+  if (!selectedImage.value) {
+    return
+  }
+
+  moveSourceImageId.value
+    = moveSourceImageId.value === selectedImage.value.id
+      ? null
+      : selectedImage.value.id
+}
+
+function handleMoveToCell(
+  cellId: string,
+): void {
+  if (!moveSourceImageId.value) {
+    return
+  }
+
+  const imageId = moveSourceImageId.value
+
+  const moved = moveImageToCell(
+    imageId,
+    cellId,
+  )
+
+  if (!moved) {
+    return
+  }
+
+  selectedImageId.value = imageId
+  selectedCellId.value = cellId
+  moveSourceImageId.value = null
 }
 
 function handleSelectedImageReplaceRequest(): void {
@@ -391,6 +434,10 @@ function handleFilesSelected(files: File[]): void {
 }
 
 function handleRemoveImage(id: string): void {
+  if (moveSourceImageId.value === id) {
+    moveSourceImageId.value = null
+  }
+
   removeImage(id)
   importNotice.value = ''
 }
@@ -446,6 +493,10 @@ function handleReplaceImage(
   if (selectedImageId.value === id) {
     selectedImageId.value
       = replacement.id
+  }
+
+  if (moveSourceImageId.value === id) {
+    moveSourceImageId.value = null
   }
 
   importNotice.value = ''
@@ -612,9 +663,11 @@ watch(imageCapacity, (capacity) => {
               :framings="framings"
               :selected-image-id="selectedImageId"
               :selected-cell-id="selectedCellId"
+              :move-source-image-id="moveSourceImageId"
               @select="handleSelectImage"
               @select-cell="handleSelectCell"
               @request-import="handleRequestCellImport"
+              @move-to-cell="handleMoveToCell"
               @file-drop="handleCellFile"
               @framing-change="handleFramingChange"
             />
@@ -628,9 +681,11 @@ watch(imageCapacity, (capacity) => {
                 :framings="framings"
                 :selected-image-id="selectedImageId"
                 :selected-cell-id="selectedCellId"
+                :move-source-image-id="moveSourceImageId"
                 @select="handleSelectImage"
                 @select-cell="handleSelectCell"
                 @request-import="handleRequestCellImport"
+                @move-to-cell="handleMoveToCell"
                 @file-drop="handleCellFile"
               />
             </template>
@@ -653,6 +708,26 @@ watch(imageCapacity, (capacity) => {
           </div>
 
           <div class="selected-cell-actions__buttons">
+            <button
+              type="button"
+              class="selected-cell-actions__button"
+              :class="{
+                'selected-cell-actions__button--active':
+                  moveSourceImageId === selectedImage.id,
+              }"
+              :aria-pressed="
+                moveSourceImageId === selectedImage.id
+              "
+              data-selected-cell-move
+              @click="handleMoveModeToggle"
+            >
+              {{
+                moveSourceImageId === selectedImage.id
+                  ? 'Annuler'
+                  : 'Déplacer'
+              }}
+            </button>
+
             <button
               type="button"
               class="selected-cell-actions__button"
@@ -924,6 +999,20 @@ watch(imageCapacity, (capacity) => {
   color: #0f172a;
 
   background: #f8fafc;
+}
+
+.selected-cell-actions__button--active {
+  color: #ffffff;
+
+  border-color: #475569;
+
+  background: #475569;
+}
+
+.selected-cell-actions__button--active:hover {
+  color: #ffffff;
+
+  background: #334155;
 }
 
 .selected-cell-actions__button--remove:hover {
