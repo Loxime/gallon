@@ -309,4 +309,45 @@ describe('image grid preview', () => {
       'height: 400%',
     )
   })
+  it('applies spacing between preview cells', () => {
+    const template = GRID_TEMPLATES.find(
+      item => item.id === 'two-columns',
+    )
+
+    expect(template).toBeDefined()
+
+    if (!template) {
+      return
+    }
+
+    const wrapper = mount(
+      ImageGridPreview,
+      {
+        props: {
+          template,
+          images: [],
+          spacing: 20,
+        },
+      },
+    )
+
+    const cells = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    expect(cells).toHaveLength(2)
+
+    expect(
+      cells[0]?.attributes('style'),
+    ).toContain('width: 230px')
+
+    expect(
+      cells[1]?.attributes('style'),
+    ).toContain('left: 250px')
+
+    expect(
+      cells[1]?.attributes('style'),
+    ).toContain('width: 230px')
+  })
+
 })

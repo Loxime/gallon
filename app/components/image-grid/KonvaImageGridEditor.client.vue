@@ -52,6 +52,10 @@ import {
   loadImageResource,
 } from '../../utils/image-loader'
 
+import {
+  calculateSpacedGridCellRect,
+} from '../../utils/grid-spacing'
+
 import type {
   ExportableKonvaStage,
 } from '../../utils/png-export'
@@ -68,12 +72,14 @@ const props = withDefaults(defineProps<{
   selectedImageId?: string | null
   selectedCellId?: string | null
   moveSourceImageId?: string | null
+  spacing?: number
 }>(), {
   assignments: null,
   framings: () => ({}),
   selectedImageId: null,
   selectedCellId: null,
   moveSourceImageId: null,
+  spacing: 0,
 })
 
 const emit = defineEmits<{
@@ -230,10 +236,22 @@ watch(
 const cells = computed(() => {
   return props.template.cells.map(
     (cell, index) => {
-      const x = cell.x * stageWidth.value
-      const y = cell.y * stageHeight.value
-      const width = cell.width * stageWidth.value
-      const height = cell.height * stageHeight.value
+      const cellRect
+        = calculateSpacedGridCellRect(
+          cell,
+          {
+            width: stageWidth.value,
+            height: stageHeight.value,
+          },
+          props.spacing,
+        )
+
+      const {
+        x,
+        y,
+        width,
+        height,
+      } = cellRect
 
       const assignedImageId
         = props.assignments?.[cell.id]
@@ -249,18 +267,19 @@ const cells = computed(() => {
         : undefined
 
       const target: ImageDimensions = {
-        width:
-          cell.width
-          * props.template.aspectRatio.width,
-
-        height:
-          cell.height
-          * props.template.aspectRatio.height,
+        width,
+        height,
       }
 
-      if (!image || !resource) {
+      if (
+        !image
+        || !resource
+        || width <= 0
+        || height <= 0
+      ) {
         return {
           cell,
+          cellRect,
           image,
           resource,
           target,
@@ -291,6 +310,7 @@ const cells = computed(() => {
 
       return {
         cell,
+        cellRect,
         image,
         resource,
         target,
@@ -508,6 +528,7 @@ function handleDragEnd(
       :selected-image-id="selectedImageId"
       :selected-cell-id="selectedCellId"
       :move-source-image-id="moveSourceImageId"
+      :spacing="spacing"
       @select="handleSelect"
       @select-cell="emit('selectCell', $event)"
       @request-import="emit('requestImport', $event)"
@@ -531,6 +552,17 @@ function handleDragEnd(
         }"
       >
         <VLayer>
+          <VRect
+            :config="{
+              x: 0,
+              y: 0,
+              width: stageWidth,
+              height: stageHeight,
+              fill: '#ffffff',
+              listening: false,
+            }"
+          />
+
           <VGroup
             v-for="item in cells"
             :key="item.cell.id"
@@ -550,8 +582,6 @@ function handleDragEnd(
                 width: item.width,
                 height: item.height,
                 fill: '#cbd5e1',
-                stroke: '#ffffff',
-                strokeWidth: 2,
               }"
             />
 
@@ -624,10 +654,10 @@ function handleDragEnd(
               item.cell.id === dragOverCellId,
           }"
           :style="{
-            left: `${item.cell.x * 100}%`,
-            top: `${item.cell.y * 100}%`,
-            width: `${item.cell.width * 100}%`,
-            height: `${item.cell.height * 100}%`,
+            left: `${item.x}px`,
+            top: `${item.y}px`,
+            width: `${item.width}px`,
+            height: `${item.height}px`,
           }"
           aria-label="Ajouter une image"
           :data-cell-id="item.cell.id"
@@ -669,7 +699,7 @@ function handleDragEnd(
   border: 1px solid #cbd5e1;
   border-radius: 8px;
 
-  background: #e2e8f0;
+  background: #ffffff;
 }
 
 .konva-grid-editor--fallback {
@@ -698,7 +728,7 @@ function handleDragEnd(
 
   color: #64748b;
 
-  border: 2px solid #ffffff;
+  border: 0;
 
   background: rgba(241, 245, 249, 0.96);
 

@@ -41,4 +41,44 @@ describe('home page', () => {
       templates[0]?.attributes('aria-pressed'),
     ).toBe('true')
   })
+  it('updates grid spacing interactively', async () => {
+    const wrapper = await mountSuspended(HomePage)
+
+    const input = wrapper.get(
+      '[data-grid-spacing]',
+    )
+
+    expect(
+      (input.element as HTMLInputElement).value,
+    ).toBe('0')
+
+    expect(
+      wrapper
+        .get('[data-grid-spacing-value]')
+        .text(),
+    ).toBe('0 px')
+
+    await input.setValue('24')
+
+    expect(
+      wrapper
+        .get('[data-grid-spacing-value]')
+        .text(),
+    ).toBe('24 px')
+
+    const cells = wrapper.findAll(
+      '[data-grid-cell]',
+    )
+
+    expect(cells).toHaveLength(2)
+
+    expect(
+      cells[0]?.attributes('style'),
+    ).toContain('width: 228px')
+
+    expect(
+      cells[1]?.attributes('style'),
+    ).toContain('left: 252px')
+  })
+
 })

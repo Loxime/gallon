@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {
   computed,
+  onBeforeUnmount,
+  onMounted,
   ref,
   shallowRef,
   watch,
@@ -31,6 +33,10 @@ import {
 } from '../../utils/image-loader'
 
 import {
+  calculateSpacedGridCellRect,
+} from '../../utils/grid-spacing'
+
+import {
   DEFAULT_IMAGE_FRAMING,
   calculateFramedImagePlacement,
 } from '../../utils/image-framing'
@@ -43,12 +49,14 @@ const props = withDefaults(defineProps<{
   selectedImageId?: string | null
   selectedCellId?: string | null
   moveSourceImageId?: string | null
+  spacing?: number
 }>(), {
   assignments: null,
   framings: () => ({}),
   selectedImageId: null,
   selectedCellId: null,
   moveSourceImageId: null,
+  spacing: 0,
 })
 
 const emit = defineEmits<{
@@ -68,7 +76,48 @@ const loadedImages = shallowRef(
 
 const dragOverCellId = ref<string | null>(null)
 
+const container = ref<HTMLElement>()
+const previewWidth = ref(480)
+
+const previewHeight = computed(() => {
+  return (
+    previewWidth.value
+    * props.template.aspectRatio.height
+    / props.template.aspectRatio.width
+  )
+})
+
+let resizeObserver: ResizeObserver | undefined
 let loadGeneration = 0
+
+onMounted(() => {
+  if (
+    !container.value
+    || typeof ResizeObserver === 'undefined'
+  ) {
+    return
+  }
+
+  resizeObserver = new ResizeObserver(
+    ([entry]) => {
+      if (!entry) {
+        return
+      }
+
+      const width = entry.contentRect.width
+
+      if (width > 0) {
+        previewWidth.value = width
+      }
+    },
+  )
+
+  resizeObserver.observe(container.value)
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+})
 
 watch(
   () => props.images.map(image => ({
@@ -132,6 +181,16 @@ watch(
 const cells = computed(() => {
   return props.template.cells.map(
     (cell, index) => {
+      const cellRect
+        = calculateSpacedGridCellRect(
+          cell,
+          {
+            width: previewWidth.value,
+            height: previewHeight.value,
+          },
+          props.spacing,
+        )
+
       const assignedImageId
         = props.assignments?.[cell.id]
 
@@ -144,6 +203,7 @@ const cells = computed(() => {
       if (!image) {
         return {
           cell,
+          cellRect,
           image: undefined,
           imageStyle: undefined,
         }
@@ -153,22 +213,22 @@ const cells = computed(() => {
         image.id,
       )
 
-      if (!resource) {
+      if (
+        !resource
+        || cellRect.width <= 0
+        || cellRect.height <= 0
+      ) {
         return {
           cell,
+          cellRect,
           image,
           imageStyle: undefined,
         }
       }
 
       const target = {
-        width:
-          cell.width
-          * props.template.aspectRatio.width,
-
-        height:
-          cell.height
-          * props.template.aspectRatio.height,
+        width: cellRect.width,
+        height: cellRect.height,
       }
 
       const framing
@@ -184,6 +244,7 @@ const cells = computed(() => {
 
       return {
         cell,
+        cellRect,
         image,
         imageStyle: {
           left: `${placement.offsetX * 100}%`,
@@ -276,6 +337,7 @@ function handleDrop(
 
 <template>
   <div
+    ref="container"
     class="image-grid-preview"
     :style="{
       aspectRatio: `${template.aspectRatio.width} / ${template.aspectRatio.height}`,
@@ -301,10 +363,10 @@ function handleDrop(
           Boolean(moveSourceImageId),
       }"
       :style="{
-        left: `${item.cell.x * 100}%`,
-        top: `${item.cell.y * 100}%`,
-        width: `${item.cell.width * 100}%`,
-        height: `${item.cell.height * 100}%`,
+        left: `${item.cellRect.x}px`,
+        top: `${item.cellRect.y}px`,
+        width: `${item.cellRect.width}px`,
+        height: `${item.cellRect.height}px`,
       }"
       :aria-label="
         item.image
@@ -380,7 +442,7 @@ function handleDrop(
   border: 1px solid #cbd5e1;
   border-radius: 8px;
 
-  background: #e2e8f0;
+  background: #ffffff;
 }
 
 .image-grid-preview__cell {
@@ -388,7 +450,7 @@ function handleDrop(
   overflow: hidden;
   padding: 0;
 
-  border: 2px solid #ffffff;
+  border: 0;
 
   background: #cbd5e1;
 
