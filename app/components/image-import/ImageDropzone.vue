@@ -172,28 +172,57 @@ function handleDrop(event: DragEvent): void {
 }
 
 .dropzone__button {
+  min-height: 42px;
   margin-top: 20px;
   padding: 10px 16px;
 
   color: #ffffff;
-  font-weight: 600;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
 
-  border: 0;
-  border-radius: 8px;
+  border: 1px solid #2563eb;
+  border-radius: 10px;
 
   background: #2563eb;
+
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.16);
+
+  cursor: pointer;
+
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
 }
 
 .dropzone__button:hover:not(:disabled) {
+  border-color: #1d4ed8;
   background: #1d4ed8;
+
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+}
+
+.dropzone__button:active:not(:disabled) {
+  transform: translateY(1px);
+
+  box-shadow: none;
 }
 
 .dropzone__button:focus-visible {
-  outline: 3px solid #93c5fd;
+  outline: 3px solid #bfdbfe;
   outline-offset: 2px;
 }
 
 .dropzone__button:disabled {
+  color: #94a3b8;
+
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+
+  box-shadow: none;
+
   cursor: not-allowed;
 }
 
