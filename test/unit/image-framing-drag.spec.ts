@@ -6,6 +6,7 @@ import {
 
 import {
   calculateFramingFromPosition,
+  constrainFramedImagePosition,
 } from '../../app/utils/image-framing'
 
 describe('image framing drag', () => {
@@ -109,4 +110,76 @@ describe('image framing drag', () => {
 
     expect(framing.panY).toBe(0)
   })
+  it('keeps a smaller image centered while dragging', () => {
+    const position = constrainFramedImagePosition(
+      {
+        x: 200,
+        y: 100,
+        width: 200,
+        height: 200,
+      },
+      {
+        width: 100,
+        height: 100,
+      },
+      {
+        x: 1000,
+        y: -1000,
+      },
+    )
+
+    expect(position).toEqual({
+      x: 250,
+      y: 150,
+    })
+  })
+
+  it('keeps an under-zoomed axis centered while constraining the overflowing axis', () => {
+    const position = constrainFramedImagePosition(
+      {
+        x: 200,
+        y: 100,
+        width: 200,
+        height: 200,
+      },
+      {
+        width: 300,
+        height: 100,
+      },
+      {
+        x: 1000,
+        y: -1000,
+      },
+    )
+
+    expect(position).toEqual({
+      x: 200,
+      y: 150,
+    })
+  })
+
+  it('constrains an overflowing image between cell edges', () => {
+    const position = constrainFramedImagePosition(
+      {
+        x: 200,
+        y: 100,
+        width: 200,
+        height: 200,
+      },
+      {
+        width: 300,
+        height: 400,
+      },
+      {
+        x: -1000,
+        y: 1000,
+      },
+    )
+
+    expect(position).toEqual({
+      x: 100,
+      y: 100,
+    })
+  })
+
 })

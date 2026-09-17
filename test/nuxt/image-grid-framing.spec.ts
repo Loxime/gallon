@@ -190,4 +190,59 @@ describe('image grid framing', () => {
       'height: 200%',
     )
   })
+  it('centers an image when zoomed below cover size', async () => {
+    installImageMock()
+
+    const template = GRID_TEMPLATES.find(
+      item => item.id === 'two-columns',
+    )
+
+    expect(template).toBeDefined()
+
+    if (!template) {
+      return
+    }
+
+    const wrapper = mount(
+      ImageGridPreview,
+      {
+        props: {
+          template,
+          images: [
+            createImage(),
+          ],
+          framings: {
+            'image-1': {
+              zoom: 0.5,
+              panX: 0,
+              panY: 0,
+            },
+          },
+        },
+      },
+    )
+
+    await flushPromises()
+
+    const style = wrapper
+      .get('[data-grid-image]')
+      .attributes('style')
+
+    expect(style).toContain(
+      'left: 25%',
+    )
+
+    expect(style).toContain(
+      'top: 25%',
+    )
+
+    expect(style).toContain(
+      'width: 50%',
+    )
+
+    expect(style).toContain(
+      'height: 50%',
+    )
+  })
+
 })

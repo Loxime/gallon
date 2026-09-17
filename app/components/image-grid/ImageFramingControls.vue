@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { ImageFraming } from '../../types/image-framing'
 
+import {
+  MIN_IMAGE_FRAMING_ZOOM,
+} from '../../utils/image-framing'
+
 defineProps<{
   imageName: string
   framing: ImageFraming
@@ -53,7 +57,7 @@ function handleZoomInput(event: Event): void {
 
       <input
         type="range"
-        min="1"
+        :min="MIN_IMAGE_FRAMING_ZOOM"
         max="3"
         step="0.05"
         :value="framing.zoom"

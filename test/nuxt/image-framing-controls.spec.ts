@@ -84,4 +84,34 @@ describe('image framing controls', () => {
       '175 %',
     )
   })
+  it('allows zooming below cover size', async () => {
+    const wrapper = mount(
+      ImageFramingControls,
+      {
+        props: {
+          imageName: 'photo.jpg',
+          framing,
+        },
+      },
+    )
+
+    const input = wrapper.get(
+      '[data-framing-zoom]',
+    )
+
+    expect(
+      input.attributes('min'),
+    ).toBe('0.25')
+
+    await input.setValue('0.5')
+
+    expect(
+      wrapper.emitted('zoomChange'),
+    ).toEqual([
+      [
+        0.5,
+      ],
+    ])
+  })
+
 })
