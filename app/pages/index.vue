@@ -575,57 +575,7 @@ watch(imageCapacity, (capacity) => {
       </section>
 
       <section class="editor">
-        <div class="editor__controls">
-<section
-            id="images"
-            class="image-import image-import--first"
-          >
-          <div class="image-import__heading">
-            <div>
-              <h2 class="editor__title">
-                Ajoutez vos images
-              </h2>
-
-              <p class="editor__description">
-                {{ images.length }} / {{ imageCapacity }} images
-              </p>
-            </div>
-          </div>
-
-          <ImageDropzone
-            :disabled="isImageImportFull"
-            @files-selected="handleFilesSelected"
-          />
-
-          <p
-            v-if="isImageImportFull"
-            class="image-import__status"
-          >
-            Toutes les cellules de la grille sont remplies.
-          </p>
-
-          <p
-            v-if="importNotice"
-            class="image-import__notice"
-            role="status"
-            aria-live="polite"
-            data-import-notice
-          >
-            {{ importNotice }}
-          </p>
-
-          <ImportedImageList
-            :images="images"
-            :selected-image-id="selectedImageId"
-            @select="handleSelectImage"
-            @remove="handleRemoveImage"
-            @move="handleMoveImage"
-            @replace="handleReplaceImage"
-          />
-        </section>
-      </div>
-
-      <div class="editor__workspace">
+        <div class="editor__workspace">
         <div class="workspace-heading">
           <div>
             <h2 class="editor__title">
@@ -783,7 +733,55 @@ watch(imageCapacity, (capacity) => {
           @zoom-change="handleZoomChange"
           @reset="handleResetFraming"
         />
-        </div>
+
+        <section
+          id="images"
+          class="image-import"
+        >
+          <div class="image-import__heading">
+            <div>
+              <h2 class="editor__title">
+                Ajoutez vos images
+              </h2>
+
+              <p class="editor__description">
+                {{ images.length }} / {{ imageCapacity }} images
+              </p>
+            </div>
+          </div>
+
+          <ImageDropzone
+            :disabled="isImageImportFull"
+            @files-selected="handleFilesSelected"
+          />
+
+          <p
+            v-if="isImageImportFull"
+            class="image-import__status"
+          >
+            Toutes les cellules de la grille sont remplies.
+          </p>
+
+          <p
+            v-if="importNotice"
+            class="image-import__notice"
+            role="status"
+            aria-live="polite"
+            data-import-notice
+          >
+            {{ importNotice }}
+          </p>
+
+          <ImportedImageList
+            :images="images"
+            :selected-image-id="selectedImageId"
+            @select="handleSelectImage"
+            @remove="handleRemoveImage"
+            @move="handleMoveImage"
+            @replace="handleReplaceImage"
+          />
+        </section>
+      </div>
       </section>
     </main>
   </div>
@@ -840,15 +838,10 @@ watch(imageCapacity, (capacity) => {
 }
 
 .editor {
-  display: grid;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
-  gap: 40px;
-
   width: min(100%, 1180px);
   margin: 40px auto 0;
 }
 
-.editor__controls,
 .editor__workspace {
   min-width: 0;
 }
@@ -868,13 +861,9 @@ watch(imageCapacity, (capacity) => {
 }
 
 .image-import {
-  margin-top: 40px;
+  margin-top: 48px;
 
   scroll-margin-top: 24px;
-}
-
-.image-import--first {
-  margin-top: 0;
 }
 
 .image-import__heading {
@@ -1064,17 +1053,12 @@ watch(imageCapacity, (capacity) => {
 }
 
 .workspace__preview {
-  width: min(100%, 520px);
+  width: min(100%, 760px);
 }
 
 @media (max-width: 900px) {
   .home-page {
     padding-inline: 24px;
-  }
-
-  .editor {
-    grid-template-columns: 1fr;
-    gap: 32px;
   }
 
   .workspace-heading {
