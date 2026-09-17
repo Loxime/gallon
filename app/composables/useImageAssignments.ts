@@ -87,11 +87,11 @@ export function useImageAssignments() {
     const targetImageId
       = assignments.value[targetCellId]
 
-    const next = {
-      ...assignments.value,
-    }
-
-    delete next[sourceCellId]
+    const next = Object.fromEntries(
+      Object.entries(assignments.value).filter(
+        ([cellId]) => cellId !== sourceCellId,
+      ),
+    )
 
     next[targetCellId] = imageId
 

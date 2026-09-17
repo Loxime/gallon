@@ -42,17 +42,20 @@ const props = withDefaults(defineProps<{
   framings?: Readonly<Record<string, ImageFraming>>
   selectedImageId?: string | null
   selectedCellId?: string | null
+  moveSourceImageId?: string | null
 }>(), {
   assignments: null,
   framings: () => ({}),
   selectedImageId: null,
   selectedCellId: null,
+  moveSourceImageId: null,
 })
 
 const emit = defineEmits<{
   select: [imageId: string]
   selectCell: [cellId: string]
   requestImport: [cellId: string]
+  moveToCell: [cellId: string]
   fileDrop: [
     cellId: string,
     file: File,
@@ -197,6 +200,15 @@ function handleCellClick(
   cellId: string,
   imageId?: string,
 ): void {
+  if (props.moveSourceImageId) {
+    emit(
+      'moveToCell',
+      cellId,
+    )
+
+    return
+  }
+
   emit(
     'selectCell',
     cellId,
@@ -284,6 +296,9 @@ function handleDrop(
 
         'image-grid-preview__cell--empty':
           !item.image,
+
+        'image-grid-preview__cell--move-target':
+          Boolean(moveSourceImageId),
       }"
       :style="{
         left: `${item.cell.x * 100}%`,
@@ -404,6 +419,17 @@ function handleDrop(
 
   box-shadow:
     inset 0 0 0 3px #475569;
+}
+
+.image-grid-preview__cell--move-target {
+  cursor: crosshair;
+}
+
+.image-grid-preview__cell--move-target:hover {
+  z-index: 3;
+
+  box-shadow:
+    inset 0 0 0 3px #64748b;
 }
 
 .image-grid-preview__cell--drag-over {

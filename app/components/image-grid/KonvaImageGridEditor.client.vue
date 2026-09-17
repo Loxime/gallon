@@ -67,17 +67,20 @@ const props = withDefaults(defineProps<{
   framings?: Readonly<Record<string, ImageFraming>>
   selectedImageId?: string | null
   selectedCellId?: string | null
+  moveSourceImageId?: string | null
 }>(), {
   assignments: null,
   framings: () => ({}),
   selectedImageId: null,
   selectedCellId: null,
+  moveSourceImageId: null,
 })
 
 const emit = defineEmits<{
   select: [imageId: string]
   selectCell: [cellId: string]
   requestImport: [cellId: string]
+  moveToCell: [cellId: string]
   fileDrop: [
     cellId: string,
     file: File,
@@ -302,7 +305,7 @@ const cells = computed(() => {
           width: imageWidth,
           height: imageHeight,
           image: resource.element,
-          draggable: true,
+          draggable: !props.moveSourceImageId,
 
           dragBoundFunc: (
             position: {
@@ -378,6 +381,18 @@ function handleSelect(
   imageId: string,
   cellId?: string,
 ): void {
+  if (
+    props.moveSourceImageId
+    && cellId
+  ) {
+    emit(
+      'moveToCell',
+      cellId,
+    )
+
+    return
+  }
+
   if (cellId) {
     emit(
       'selectCell',
@@ -394,6 +409,15 @@ function handleSelect(
 function handleEmptyCellClick(
   cellId: string,
 ): void {
+  if (props.moveSourceImageId) {
+    emit(
+      'moveToCell',
+      cellId,
+    )
+
+    return
+  }
+
   emit(
     'selectCell',
     cellId,
@@ -483,9 +507,11 @@ function handleDragEnd(
       :framings="framings"
       :selected-image-id="selectedImageId"
       :selected-cell-id="selectedCellId"
+      :move-source-image-id="moveSourceImageId"
       @select="handleSelect"
       @select-cell="emit('selectCell', $event)"
       @request-import="emit('requestImport', $event)"
+      @move-to-cell="emit('moveToCell', $event)"
       @file-drop="
         (cellId, file) =>
           emit(
